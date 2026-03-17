@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Privacy Lab</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <div class="hlogo">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <circle cx="5" cy="5" r="3" fill="#ef4444"/>
+      <circle cx="21" cy="5" r="3" fill="#3b82f6"/>
+      <circle cx="13" cy="21" r="3" fill="#22c55e"/>
+      <circle cx="5" cy="15" r="2" fill="#eab308"/>
+      <line x1="5" y1="5" x2="21" y2="5" stroke="#334155" stroke-width="1"/>
+      <line x1="5" y1="5" x2="13" y2="21" stroke="#334155" stroke-width="1"/>
+      <line x1="21" y1="5" x2="13" y2="21" stroke="#334155" stroke-width="1"/>
+      <line x1="5" y1="5" x2="5" y2="15" stroke="#334155" stroke-width="1"/>
+    </svg>
+    <div>
+      <div class="htitle">Community Privacy Lab</div>
+      <div class="hsub">Hs · MHs-Joint · Link Perturbation</div>
+    </div>
+  </div>
+  <div class="hright">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">No dataset loaded</span>
+    <div class="mode-toggle" id="modeToggle">
+      <button class="mode-btn active" data-mode="single">Single Target</button>
+      <button class="mode-btn" data-mode="multi">Multi Target</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- Step 1: Dataset -->
+    <div class="sb-block">
+      <div class="sb-step-label">
+        <span class="step-num" id="sn1">1</span>
+        <span>Load Dataset</span>
+      </div>
+
+      <div class="sb-sub">Preloaded samples</div>
+      <div id="preloadedList" class="ds-list"></div>
+
+      <div class="sb-sub" style="margin-top:10px;">Upload your own</div>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept=".txt,.csv,.json" hidden>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 7l4-4 4 4M3 14v1a2 2 0 002 2h10a2 2 0 002-2v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>Drop file or click</span>
+        <span class="upload-hint">.txt · .csv · .json</span>
+      </div>
+    </div>
+
+    <!-- Step 2: Detection -->
+    <div class="sb-block">
+      <div class="sb-step-label">
+        <span class="step-num" id="sn2">2</span>
+        <span>Community Detection</span>
+      </div>
+      <div class="algo-row">
+        <label class="algo-opt active" data-algo="louvain">
+          <input type="radio" name="algo" value="louvain" checked>
+          <span class="algo-name">Louvain</span>
+          <span class="algo-desc">modularity</span>
+        </label>
+        <label class="algo-opt" data-algo="lpa">
+          <input type="radio" name="algo" value="lpa">
+          <span class="algo-name">Label Prop</span>
+          <span class="algo-desc">label-based</span>
+        </label>
+      </div>
+      <button class="btn btn-primary" id="btnDetect" disabled>▶ Detect Communities</button>
+    </div>
+
+    <!-- Step 3: Target selection -->
+    <div class="sb-block">
+      <div class="sb-step-label">
+        <span class="step-num" id="sn3">3</span>
+        <span>Select Target(s)</span>
+      </div>
+      <div class="selection-info" id="selectionInfo">Run detection first</div>
+      <div id="commList" class="comm-list"></div>
+    </div>
+
+    <!-- Step 4: Parameters -->
+    <div class="sb-block">
+      <div class="sb-step-label">
+        <span class="step-num" id="sn4">4</span>
+        <span>Parameters</span>
+      </div>
+      <div class="param-row">
+        <label>Budget β <span class="param-hint">max edge changes</span></label>
+        <div class="slider-wrap">
+          <input type="range" id="budgetSlider" min="1" max="30" value="8" step="1">
+          <span class="param-val" id="budgetVal">8</span>
+        </div>
+      </div>
+      <div class="param-row" id="lambdaRow" style="display:none">
+        <label>Penalty λ <span class="param-hint">inter-target penalty</span></label>
+        <div class="slider-wrap">
+          <input type="range" id="lambdaSlider" min="0" max="1" value="0.5" step="0.05">
+          <span class="param-val" id="lambdaVal">0.50</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
+        <button class="btn btn-hide" id="btnHide" disabled>⚡ Run Hiding Algorithm</button>
+        <button class="btn" id="btnReset">↺ Reset</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="sb-block">
+      <div class="sb-sub">Graph Statistics</div>
+      <div class="stat-grid">
+        <div class="stat-box"><span class="sv" id="stN">—</span><span class="sl">Nodes</span></div>
+        <div class="stat-box"><span class="sv" id="stE">—</span><span class="sl">Edges</span></div>
+        <div class="stat-box"><span class="sv" id="stC">—</span><span class="sl">Communities</span></div>
+        <div class="stat-box"><span class="sv" id="stT">—</span><span class="sl">Targets</span></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN VIZ -->
+  <main class="main">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" data-tab="graph">Graph View</button>
+      <button class="tab" data-tab="steps">Step Explorer</button>
+      <button class="tab" data-tab="analysis">Analysis</button>
+    </div>
+
+    <div class="tab-panels">
+
+      <!-- GRAPH VIEW -->
+      <div class="tab-panel active" id="panel-graph">
+        <div class="graph-split">
+
+          <div class="graph-pane" id="pane-before">
+            <div class="pane-header">
+              <span class="pane-badge before">BEFORE</span>
+              <span class="pane-algo" id="beforeAlgo"></span>
+            </div>
+            <div class="target-chips" id="chipsB"></div>
+            <svg id="svgBefore"></svg>
+            <div class="graph-legend" id="legendBefore" style="display:none">
+              <div class="legend-title">Communities</div>
+              <div id="legendBeforeItems"></div>
+            </div>
+          </div>
+
+          <div class="graph-pane" id="pane-after">
+            <div class="pane-header">
+              <span class="pane-badge after">AFTER HIDING</span>
+              <span class="pane-algo" id="afterAlgo"></span>
+            </div>
+            <div class="target-chips" id="chipsA"></div>
+            <svg id="svgAfter"></svg>
+            <div class="graph-legend" id="legendAfter" style="display:none">
+              <div class="legend-title">Communities (updated)</div>
+              <div id="legendAfterItems"></div>
+            </div>
+            <div class="graph-empty" id="emptyAfter">
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="24" height="24" rx="4" stroke="currentColor" stroke-width="1.5"/><path d="M11 16h10M16 11v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <span>Run hiding algorithm to see result</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP EXPLORER -->
+      <div class="tab-panel" id="panel-steps">
+        <div class="steps-layout">
+
+          <div class="steps-nav">
+            <div class="steps-header">
+              <span id="stepCounter">Step 0 / 0</span>
+              <div class="steps-btns">
+                <button class="btn" id="btnPrevStep" disabled>← Prev</button>
+                <button class="btn btn-primary" id="btnNextStep" disabled>Next →</button>
+                <button class="btn" id="btnRunAll" disabled>Run All ▶▶</button>
+              </div>
+            </div>
+            <div class="step-summary" id="stepSummary">
+              <div class="step-empty">Run the hiding algorithm first, then step through each iteration here.</div>
+            </div>
+            <div class="step-graph-wrap">
+              <svg id="svgStep"></svg>
+            </div>
+          </div>
+
+          <div class="steps-detail">
+            <div class="detail-section">
+              <div class="detail-title">Sigma (safeness) at this step</div>
+              <div id="stepSigmas" class="sigma-boxes"></div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-title">All candidate operations</div>
+              <div id="candidateList" class="candidate-list">
+                <div class="cand-empty">No candidates yet</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ANALYSIS -->
+      <div class="tab-panel" id="panel-analysis">
+        <div class="analysis-wrap">
+
+          <div class="an-section">
+            <div class="an-title">H-Score (community deception score)</div>
+            <div class="hero-grid">
+              <div class="hero-card"><span class="hero-val" id="hBefore" style="color:#818cf8">—</span><span class="hero-lbl">H-Score Before</span></div>
+              <div class="hero-card"><span class="hero-val" id="hAfter" style="color:#f472b6">—</span><span class="hero-lbl">H-Score After</span></div>
+              <div class="hero-card"><span class="hero-val" id="hGain" style="color:#34d399">—</span><span class="hero-lbl">Gain</span></div>
+              <div class="hero-card"><span class="hero-val" id="hPerts" style="color:#fb923c">—</span><span class="hero-lbl">Perturbations</span></div>
+            </div>
+          </div>
+
+          <div class="an-section">
+            <div class="an-title">Per-community scores</div>
+            <div id="perCommScores" class="per-comm-grid"></div>
+          </div>
+
+          <div class="an-section">
+            <div class="an-title">Full perturbation log</div>
+            <table class="pert-table">
+              <thead><tr><th>#</th><th>Op</th><th>Edge</th><th>Community</th><th>Type</th><th>Δ gain</th></tr></thead>
+              <tbody id="pertLog"></tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+<div class="toast" id="toast"></div>
+
+<script src="js/api.js"></script>
+<script src="js/graph.js"></script>
+<script src="js/steps.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

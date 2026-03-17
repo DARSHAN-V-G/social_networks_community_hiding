@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Privacy Lab v2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07080d;--s1:#0e0f18;--s2:#161722;--s3:#1e1f2e;
+  --b1:#252638;--b2:#32344a;--b3:#45476a;
+  --tx:#ddddf5;--tx2:#9090b8;--tx3:#555578;
+  --ac:#818cf8;--ac2:#f472b6;--ac3:#34d399;--ac4:#fb923c;--ac5:#a78bfa;
+  --mono:'IBM Plex Mono',monospace;--sans:'Syne',sans-serif;
+  --r:8px;--r2:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* noise texture overlay */
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.4;}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--b1);flex-shrink:0;background:var(--s1);}
+.hlogo{display:flex;align-items:center;gap:10px;}
+.hlogo-mark{width:28px;height:28px;position:relative;}
+.hlogo-mark svg{width:100%;height:100%;}
+.htitle{font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--tx);}
+.hsub{font-size:10px;color:var(--tx3);font-family:var(--mono);letter-spacing:.08em;margin-top:1px;}
+.hbadge{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:4px;border:1px solid var(--b2);color:var(--tx2);letter-spacing:.06em;}
+.hmode{display:flex;gap:1px;background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:2px;}
+.hmode-btn{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;color:var(--tx3);transition:all .2s;border:none;background:none;}
+.hmode-btn.active{background:var(--b2);color:var(--tx);}
+
+.layout{display:grid;grid-template-columns:260px 1fr;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{background:var(--s1);border-right:1px solid var(--b1);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:0;}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--b2);}
+.sb-section{padding:14px 14px 12px;}
+.sb-section+.sb-section{border-top:1px solid var(--b1);}
+.sb-label{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.sb-label-num{width:16px;height:16px;border-radius:50%;border:1px solid var(--b3);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--tx3);}
+.sb-label-num.done{border-color:var(--ac3);color:var(--ac3);}
+.sb-label-num.active{border-color:var(--ac);color:var(--ac);}
+
+/* dataset cards */
+.ds-grid{display:flex;flex-direction:column;gap:5px;}
+.ds-card{border:1px solid var(--b1);border-radius:var(--r);padding:9px 11px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.ds-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:transparent;transition:background .2s;}
+.ds-card:hover{border-color:var(--b3);}
+.ds-card.active{border-color:var(--ac);background:rgba(129,140,248,.06);}
+.ds-card.active::before{background:var(--ac);}
+.ds-name{font-size:12px;font-weight:600;margin-bottom:2px;}
+.ds-meta{font-family:var(--mono);font-size:10px;color:var(--tx3);}
+
+/* algo pills */
+.algo-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.algo-btn{border:1px solid var(--b1);border-radius:var(--r);padding:8px 10px;cursor:pointer;transition:all .2s;text-align:center;}
+.algo-btn:hover{border-color:var(--b3);}
+.algo-btn.active{border-color:var(--ac5);background:rgba(167,139,250,.06);}
+.algo-name{font-size:11px;font-weight:600;}
+.algo-type{font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:2px;}
+
+/* buttons */
+.btn{width:100%;padding:9px;border-radius:var(--r);border:1px solid var(--b2);background:var(--s2);color:var(--tx);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .2s;letter-spacing:.04em;}
+.btn:hover{border-color:var(--b3);background:var(--s3);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn-run{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600;}
+.btn-run:hover{background:#6d77f0;border-color:#6d77f0;}
+.btn-hide{background:rgba(244,114,182,.1);border-color:rgba(244,114,182,.35);color:var(--ac2);}
+.btn-hide:hover:not(:disabled){background:rgba(244,114,182,.18);border-color:var(--ac2);}
+
+/* community multi-select list */
+.comm-list{display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;}
+.comm-list::-webkit-scrollbar{width:3px;}
+.comm-list::-webkit-scrollbar-thumb{background:var(--b2);}
+.comm-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:6px;border:1px solid var(--b1);cursor:pointer;transition:all .2s;position:relative;}
+.comm-item:hover{border-color:var(--b3);}
+.comm-item.selected{border-color:var(--item-color, var(--ac2));background:color-mix(in srgb, var(--item-color, var(--ac2)) 8%, transparent);}
+.comm-swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0;transition:transform .2s;}
+.comm-item.selected .comm-swatch{transform:scale(1.3);}
+.comm-info{flex:1;min-width:0;}
+.comm-name-text{font-size:11px;font-weight:600;font-family:var(--mono);}
+.comm-size-text{font-size:10px;color:var(--tx3);}
+.comm-check{width:14px;height:14px;border-radius:3px;border:1px solid var(--b3);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.comm-item.selected .comm-check{background:var(--item-color, var(--ac2));border-color:var(--item-color, var(--ac2));}
+.comm-check-mark{color:#fff;font-size:9px;opacity:0;}
+.comm-item.selected .comm-check-mark{opacity:1;}
+
+/* multi-select info bar */
+.multi-bar{background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);padding:8px 10px;font-family:var(--mono);font-size:10px;color:var(--tx2);display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.multi-count{color:var(--ac2);font-weight:600;}
+
+/* sliders */
+.slider-wrap{display:flex;flex-direction:column;gap:6px;}
+.slider-row{display:flex;align-items:center;gap:8px;}
+.slider-label{font-family:var(--mono);font-size:10px;color:var(--tx3);min-width:12px;}
+.slider-val{font-family:var(--mono);font-size:11px;color:var(--ac);min-width:28px;text-align:right;}
+input[type=range]{flex:1;-webkit-appearance:none;height:2px;background:var(--b2);border-radius:1px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--ac);cursor:pointer;border:2px solid var(--bg);}
+
+/* stats */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.stat-box{background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:8px 10px;text-align:center;}
+.stat-v{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ac);}
+.stat-l{font-size:9px;color:var(--tx3);font-family:var(--mono);letter-spacing:.06em;margin-top:2px;}
+
+/* MAIN VIZ */
+.viz{display:flex;flex-direction:column;overflow:hidden;}
+
+/* tabs */
+.vtabs{display:flex;gap:0;border-bottom:1px solid var(--b1);background:var(--s1);padding:0 16px;flex-shrink:0;}
+.vtab{font-family:var(--mono);font-size:11px;padding:11px 14px;color:var(--tx3);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;letter-spacing:.04em;}
+.vtab:hover{color:var(--tx2);}
+.vtab.active{color:var(--ac);border-bottom-color:var(--ac);}
+
+.vpanels{flex:1;overflow:hidden;position:relative;}
+.vpanel{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .25s;}
+.vpanel.active{opacity:1;pointer-events:all;}
+
+/* split view */
+.split{display:grid;grid-template-columns:1fr 1fr;height:100%;}
+.gpane{position:relative;border-right:1px solid var(--b1);overflow:hidden;}
+.gpane:last-child{border-right:none;}
+.pane-head{position:absolute;top:12px;left:12px;z-index:10;display:flex;align-items:center;gap:6px;}
+.pane-tag{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:3px;letter-spacing:.08em;}
+.tag-before{background:rgba(129,140,248,.12);color:var(--ac);border:1px solid rgba(129,140,248,.25);}
+.tag-after{background:rgba(244,114,182,.12);color:var(--ac2);border:1px solid rgba(244,114,182,.25);}
+.pane-algo{font-family:var(--mono);font-size:9px;color:var(--tx3);}
+
+.graph-svg{width:100%;height:100%;}
+
+/* legend */
+.glegend{position:absolute;bottom:12px;left:12px;background:rgba(7,8,13,.88);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px;z-index:10;backdrop-filter:blur(8px);}
+.glegend-title{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+.glegend-items{display:flex;flex-direction:column;gap:4px;}
+.glegend-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--tx2);font-family:var(--mono);}
+.glegend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+
+/* target communities indicator */
+.target-indicators{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:10;}
+.target-chip{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:4px;display:flex;align-items:center;gap:5px;}
+.target-dot{width:6px;height:6px;border-radius:50%;}
+
+/* empty */
+.gempty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--tx3);}
+.gempty-icon{width:40px;height:40px;opacity:.2;}
+.gempty-text{font-family:var(--mono);font-size:11px;letter-spacing:.06em;}
+
+/* analysis panel */
+.analysis-panel{padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+.analysis-panel::-webkit-scrollbar{width:3px;}
+.analysis-panel::-webkit-scrollbar-thumb{background:var(--b2);}
+.asec-title{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px;}
+
+/* per-community score cards */
+.comm-scores{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;}
+.cscore-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:12px;border-left:3px solid var(--card-color,var(--b3));}
+.cscore-name{font-family:var(--mono);font-size:10px;color:var(--tx2);margin-bottom:6px;}
+.cscore-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:3px;}
+.cscore-key{color:var(--tx3);}
+.cscore-val{color:var(--tx);}
+.cscore-gain{color:var(--ac3);font-weight:600;}
+
+/* summary heroes */
+.hero-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.hero-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px;text-align:center;}
+.hero-val{font-family:var(--mono);font-size:24px;font-weight:600;display:block;margin-bottom:3px;}
+.hero-lbl{font-size:9px;color:var(--tx3);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;}
+
+/* pert log */
+.pert-table{width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono);}
+.pert-table th{text-align:left;padding:6px 10px;color:var(--tx3);font-size:9px;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--b1);}
+.pert-table td{padding:6px 10px;color:var(--tx2);border-bottom:1px solid rgba(37,38,56,.6);}
+.op-add{color:var(--ac3);}
+.op-del{color:var(--ac2);}
+
+/* log area */
+.log-box{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:12px;font-family:var(--mono);font-size:10px;line-height:1.9;max-height:180px;overflow-y:auto;}
+.log-box::-webkit-scrollbar{width:3px;}
+.log-box::-webkit-scrollbar-thumb{background:var(--b2);}
+.log-t{color:var(--tx3);margin-right:8px;}
+.log-s{color:var(--ac3);}
+.log-w{color:var(--ac4);}
+.log-a{color:var(--ac);}
+.log-e{color:var(--ac2);}
+
+.tooltip{position:fixed;background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);padding:8px 12px;font-size:11px;font-family:var(--mono);pointer-events:none;z-index:9998;opacity:0;transition:opacity .15s;color:var(--tx);max-width:220px;line-height:1.6;}
+.tooltip.show{opacity:1;}
+
+/* HALO node effect (replaces old pulse) */
+@keyframes rotate-halo{to{transform:rotate(360deg);}}
+@keyframes dash-flow{to{stroke-dashoffset:-20;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hlogo">
+    <div class="hlogo-mark">
+      <svg viewBox="0 0 28 28" fill="none">
+        <circle cx="6" cy="6" r="3" fill="var(--ac)" opacity=".9"/>
+        <circle cx="22" cy="6" r="3" fill="var(--ac5)" opacity=".9"/>
+        <circle cx="14" cy="22" r="3" fill="var(--ac2)" opacity=".9"/>
+        <circle cx="6" cy="16" r="2" fill="var(--ac3)" opacity=".8"/>
+        <line x1="6" y1="6" x2="22" y2="6" stroke="var(--b3)" stroke-width="1"/>
+        <line x1="6" y1="6" x2="14" y2="22" stroke="var(--b3)" stroke-width="1"/>
+        <line x1="22" y1="6" x2="14" y2="22" stroke="var(--b3)" stroke-width="1"/>
+        <line x1="6" y1="6" x2="6" y2="16" stroke="var(--b3)" stroke-width="1"/>
+        <line x1="6" y1="16" x2="14" y2="22" stroke="var(--b3)" stroke-width="1"/>
+      </svg>
+    </div>
+    <div>
+      <div class="htitle">Community Privacy Lab</div>
+      <div class="hsub">MHs-Joint · Multi-Target Hiding</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="hmode" id="modeSwitch">
+      <button class="hmode-btn active" data-mode="single">Single Target</button>
+      <button class="hmode-btn" data-mode="multi">Multi Target</button>
+    </div>
+    <div class="hbadge">Chen et al. 2021 + MHs extension</div>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+
+  <!-- Dataset -->
+  <div class="sb-section">
+    <div class="sb-label"><span class="sb-label-num active" id="sn1">1</span>Dataset</div>
+    <div class="ds-grid">
+      <div class="ds-card active" data-ds="karate">
+        <div class="ds-name">Karate Club</div>
+        <div class="ds-meta">34 nodes · 78 edges · social</div>
+      </div>
+      <div class="ds-card" data-ds="dolphins">
+        <div class="ds-name">Dolphins</div>
+        <div class="ds-meta">62 nodes · 159 edges · animal</div>
+      </div>
+      <div class="ds-card" data-ds="polbooks">
+        <div class="ds-name">Political Books</div>
+        <div class="ds-meta">105 nodes · 441 edges · co-purchase</div>
+      </div>
+      <div class="ds-card" data-ds="emailCore">
+        <div class="ds-name">Email EU Core</div>
+        <div class="ds-meta">1005 nodes · 25571 edges · email network</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Algorithm -->
+  <div class="sb-section">
+    <div class="sb-label"><span class="sb-label-num" id="sn2">2</span>Detection Algorithm</div>
+    <div class="algo-row">
+      <div class="algo-btn active" data-algo="louvain">
+        <div class="algo-name">Louvain</div>
+        <div class="algo-type">modularity</div>
+      </div>
+      <div class="algo-btn" data-algo="lpa">
+        <div class="algo-name">Label Prop</div>
+        <div class="algo-type">label-based</div>
+      </div>
+    </div>
+    <div style="margin-top:8px;">
+      <button class="btn btn-run" id="btnDetect">▶ Detect Communities</button>
+    </div>
+  </div>
+
+  <!-- Target communities -->
+  <div class="sb-section">
+    <div class="sb-label"><span class="sb-label-num" id="sn3">3</span>Target Communities</div>
+    <div class="multi-bar" id="multiBar">
+      <span>Selected: <span class="multi-count" id="selectedCount">0</span></span>
+      <span id="modeHint" style="color:var(--tx3);">single mode</span>
+    </div>
+    <div class="comm-list" id="commList">
+      <div style="color:var(--tx3);font-family:var(--mono);font-size:10px;padding:8px 0;">Run detection first</div>
+    </div>
+  </div>
+
+  <!-- Parameters -->
+  <div class="sb-section">
+    <div class="sb-label"><span class="sb-label-num" id="sn4">4</span>Parameters</div>
+    <div class="slider-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Budget β</span>
+        <span class="slider-val" id="budgetVal">8</span>
+      </div>
+      <input type="range" id="budgetSlider" min="1" max="24" value="8" step="1"
+        oninput="document.getElementById('budgetVal').textContent=this.value;APP.budget=+this.value;">
+
+      <div id="lambdaRow" style="display:none;margin-top:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Penalty λ</span>
+          <span class="slider-val" id="lambdaVal">0.5</span>
+        </div>
+        <input type="range" id="lambdaSlider" min="0" max="1" value="0.5" step="0.05"
+          oninput="document.getElementById('lambdaVal').textContent=(+this.value).toFixed(2);APP.lambda=+this.value;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:4px;">0 = ignore inter-target edges · 1 = full penalty</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:5px;">
+      <button class="btn btn-hide" id="btnHide" disabled id="btnHide">⚡ Apply Hiding Algorithm</button>
+      <button class="btn" id="btnReset">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="sb-section">
+    <div class="sb-label">Network Stats</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-v" id="stNodes">—</div><div class="stat-l">Nodes</div></div>
+      <div class="stat-box"><div class="stat-v" id="stEdges">—</div><div class="stat-l">Edges</div></div>
+      <div class="stat-box"><div class="stat-v" id="stComms">—</div><div class="stat-l">Comms</div></div>
+      <div class="stat-box"><div class="stat-v" id="stTargets">—</div><div class="stat-l">Targets</div></div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- VIZ -->
+<div class="viz">
+  <div class="vtabs">
+    <div class="vtab active" data-tab="compare">Side by Side</div>
+    <div class="vtab" data-tab="before">Before</div>
+    <div class="vtab" data-tab="after">After</div>
+    <div class="vtab" data-tab="analysis">Analysis</div>
+  </div>
+  <div class="vpanels">
+
+    <!-- COMPARE -->
+    <div class="vpanel active" id="tab-compare">
+      <div class="split">
+        <div class="gpane" id="pane-before-c">
+          <div class="pane-head">
+            <span class="pane-tag tag-before">BEFORE</span>
+            <span class="pane-algo" id="algoLabelB"></span>
+          </div>
+          <div class="target-indicators" id="targetChipsB"></div>
+          <svg class="graph-svg" id="svgBC"></svg>
+          <div class="glegend" id="legendBC" style="display:none">
+            <div class="glegend-title">Communities</div>
+            <div class="glegend-items" id="legendBCitems"></div>
+          </div>
+        </div>
+        <div class="gpane" id="pane-after-c">
+          <div class="pane-head">
+            <span class="pane-tag tag-after">AFTER HIDING</span>
+            <span class="pane-algo" id="algoLabelA"></span>
+          </div>
+          <div class="target-indicators" id="targetChipsA"></div>
+          <svg class="graph-svg" id="svgAC"></svg>
+          <div class="glegend" id="legendAC" style="display:none">
+            <div class="glegend-title">Communities (updated)</div>
+            <div class="glegend-items" id="legendACitems"></div>
+          </div>
+          <div class="gempty" id="emptyAC">
+            <svg class="gempty-icon" viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="24" height="24" rx="4" stroke="currentColor" stroke-width="1.5"/><path d="M14 20h12M20 14v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <div class="gempty-text">Apply algorithm to see result</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BEFORE single -->
+    <div class="vpanel" id="tab-before">
+      <div style="position:relative;height:100%;">
+        <div class="pane-head" style="position:absolute;top:12px;left:12px;z-index:10;">
+          <span class="pane-tag tag-before">ORIGINAL GRAPH</span>
+        </div>
+        <div class="target-indicators" id="targetChipsB2" style="position:absolute;top:12px;right:12px;z-index:10;"></div>
+        <svg class="graph-svg" id="svgB2"></svg>
+        <div class="glegend" id="legendB2" style="display:none;position:absolute;bottom:12px;left:12px;">
+          <div class="glegend-title">Communities</div>
+          <div class="glegend-items" id="legendB2items"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFTER single -->
+    <div class="vpanel" id="tab-after">
+      <div style="position:relative;height:100%;">
+        <div class="pane-head" style="position:absolute;top:12px;left:12px;z-index:10;">
+          <span class="pane-tag tag-after">AFTER HIDING</span>
+        </div>
+        <div class="target-indicators" id="targetChipsA2" style="position:absolute;top:12px;right:12px;z-index:10;"></div>
+        <svg class="graph-svg" id="svgA2"></svg>
+        <div class="glegend" id="legendA2" style="display:none;position:absolute;bottom:12px;left:12px;">
+          <div class="glegend-title">Communities (updated)</div>
+          <div class="glegend-items" id="legendA2items"></div>
+        </div>
+        <div class="gempty" id="emptyA2">
+          <svg class="gempty-icon" viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="24" height="24" rx="4" stroke="currentColor" stroke-width="1.5"/><path d="M14 20h12M20 14v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div class="gempty-text">Apply algorithm to see result</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYSIS -->
+    <div class="vpanel" id="tab-analysis">
+      <div class="analysis-panel">
+
+        <div>
+          <div class="asec-title">Summary</div>
+          <div class="hero-row">
+            <div class="hero-card">
+              <span class="hero-val" style="color:var(--ac)" id="hH1">—</span>
+              <span class="hero-lbl">H-Score Before</span>
+            </div>
+            <div class="hero-card">
+              <span class="hero-val" style="color:var(--ac2)" id="hH2">—</span>
+              <span class="hero-lbl">H-Score After</span>
+            </div>
+            <div class="hero-card">
+              <span class="hero-val" style="color:var(--ac3)" id="hGain">—</span>
+              <span class="hero-lbl">H-Score Gain</span>
+            </div>
+            <div class="hero-card">
+              <span class="hero-val" style="color:var(--ac4)" id="hPerts">—</span>
+              <span class="hero-lbl">Perturbations</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="asec-title">Per-Community Scores</div>
+          <div class="comm-scores" id="commScores">
+            <div style="color:var(--tx3);font-family:var(--mono);font-size:10px;">Run algorithm first</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="asec-title">Perturbation Log</div>
+          <table class="pert-table">
+            <thead><tr><th>#</th><th>Op</th><th>Edge</th><th>Community</th><th>ΔΦ</th></tr></thead>
+            <tbody id="pertBody"><tr><td colspan="5" style="color:var(--tx3);padding:10px;">No perturbations yet</td></tr></tbody>
+          </table>
+        </div>
+
+        <div>
+          <div class="asec-title">Execution Log</div>
+          <div class="log-box" id="logBox"><span style="color:var(--tx3);">Waiting...</span></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<div class="tooltip" id="tip"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// PALETTE — distinct, vibrant, dark-mode friendly
+// ═══════════════════════════════════════════════════════════
+const PALETTE = [
+  '#ef4444','#3b82f6','#22c55e','#eab308','#a855f7',
+  '#f97316','#06b6d4','#ec4899','#84cc16','#8b5cf6',
+  '#e11d48','#2563eb','#16a34a','#ca8a04','#7c3aed'
+];
+
+// TARGET highlighting colors (bright, for multi-select badges)
+const TARGET_COLORS = ['#ef4444','#3b82f6','#22c55e','#eab308','#a855f7'];
+
+// ═══════════════════════════════════════════════════════════
+// DATASETS
+// ═══════════════════════════════════════════════════════════
+const DATASETS = {
+  karate:{
+    nodes:Array.from({length:34},(_,i)=>({id:i})),
+    edges:[[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,10],[0,11],[0,12],[0,13],[0,17],[0,19],[0,21],[0,31],[1,2],[1,3],[1,7],[1,13],[1,17],[1,19],[1,21],[1,30],[2,3],[2,7],[2,8],[2,9],[2,13],[2,27],[2,28],[2,32],[3,7],[3,12],[3,13],[4,6],[4,10],[5,6],[5,10],[5,16],[6,16],[7,12],[7,13],[8,30],[8,32],[8,33],[9,33],[13,33],[14,32],[14,33],[15,32],[15,33],[18,32],[18,33],[19,33],[20,32],[20,33],[22,32],[22,33],[23,25],[23,27],[23,29],[23,32],[23,33],[24,25],[24,27],[24,31],[25,31],[26,29],[26,33],[27,33],[28,31],[28,33],[29,32],[29,33],[30,32],[30,33],[31,32],[31,33],[32,33]]
+  },
+  dolphins:{
+    nodes:Array.from({length:62},(_,i)=>({id:i})),
+    edges:[[0,10],[0,14],[0,15],[0,40],[0,42],[0,47],[1,17],[1,19],[1,26],[1,27],[1,28],[1,36],[1,41],[1,54],[1,61],[2,18],[2,37],[2,44],[2,46],[2,47],[2,50],[2,52],[2,58],[3,4],[3,10],[3,26],[3,28],[3,30],[3,42],[3,43],[3,44],[3,50],[3,51],[4,10],[4,26],[4,28],[4,30],[4,42],[4,50],[4,51],[5,6],[5,35],[5,38],[5,59],[6,35],[6,38],[6,44],[6,59],[7,17],[7,25],[7,54],[8,16],[8,41],[9,17],[9,26],[9,27],[9,28],[9,36],[9,54],[10,26],[10,28],[10,30],[10,42],[10,44],[11,16],[11,21],[11,29],[11,30],[11,45],[11,51],[12,15],[12,23],[12,32],[12,41],[12,53],[12,54],[12,57],[13,16],[13,17],[13,36],[13,61],[14,21],[14,32],[14,41],[14,53],[14,54],[14,57],[15,40],[15,42],[15,47],[16,29],[16,30],[16,45],[16,51],[17,25],[17,54],[18,37],[18,44],[18,46],[18,50],[18,52],[18,58],[19,27],[19,61],[20,28],[20,55],[20,58],[21,29],[21,45],[21,51],[22,25],[22,26],[22,39],[22,55],[23,32],[23,41],[23,53],[23,57],[24,26],[24,27],[24,30],[24,36],[24,39],[24,43],[24,51],[24,61],[25,54],[26,27],[26,28],[26,36],[26,43],[26,51],[26,61],[27,28],[27,36],[27,61],[28,43],[28,51],[29,45],[30,43],[30,44],[30,51],[31,54],[31,57],[31,60],[32,41],[32,53],[32,57],[33,37],[33,46],[33,50],[33,52],[33,58],[34,37],[34,46],[34,50],[34,52],[34,58],[35,38],[35,44],[35,59],[36,39],[36,51],[36,61],[37,44],[37,46],[37,50],[37,52],[37,58],[38,44],[38,59],[39,51],[39,61],[40,47],[41,53],[41,54],[43,51],[43,61],[44,46],[44,50],[44,52],[44,58],[44,59],[46,50],[46,52],[46,58],[49,55],[50,52],[50,58],[52,58],[54,57]]
+  },
+  polbooks:{
+    nodes:Array.from({length:105},(_,i)=>({id:i})),
+    edges:(()=>{
+      const e=[];const r=(s=>{let x=s;return()=>{x=((x*1664525)+1013904223)>>>0;return x/4294967295;}})(1337);
+      const lib=[...Array(35).keys()];
+      const con=[...Array(35).keys()].map(i=>i+35);
+      const neu=[...Array(35).keys()].map(i=>i+70);
+      for(let i=0;i<lib.length;i++)for(let j=i+1;j<lib.length;j++)if(r()<.16)e.push([lib[i],lib[j]]);
+      for(let i=0;i<con.length;i++)for(let j=i+1;j<con.length;j++)if(r()<.16)e.push([con[i],con[j]]);
+      for(let i=0;i<neu.length;i++)for(let j=i+1;j<neu.length;j++)if(r()<.10)e.push([neu[i],neu[j]]);
+      for(const a of lib)for(const b of neu)if(r()<.04)e.push([a,b]);
+      for(const a of con)for(const b of neu)if(r()<.04)e.push([a,b]);
+      return e;
+    })()
+  },
+  emailCore:{
+    nodes:Array.from({length:1005},(_,i)=>({id:i})),
+    edges:[[0,1],[2,3],[2,4],[5,6],[5,7],[8,9],[10,11],[12,13],[12,14],[15,16],[17,18],[12,19],[20,21],[20,22],[23,24],[23,25],[23,26],[23,27],[23,28],[23,29],[23,30],[23,31],[23,32],[23,33],[23,34],[23,35],[23,36],[23,37],[23,38],[23,39],[23,40],[41,42],[43,44],[45,46],[47,48],[49,50],[41,51],[52,53],[54,55],[54,56],[54,57],[54,58],[54,59],[60,61],[54,54],[62,63],[64,65],[62,4],[66,67],[68,69],[42,41],[70,71],[72,21],[71,70],[73,74],[75,76],[75,48],[77,78],[77,79],[80,81],[80,68],[19,62],[82,83],[22,21],[82,84],[21,72],[41,85],[41,86],[41,87],[82,86],[88,89],[90,91],[92,20],[41,93],[41,94],[41,95],[89,96],[89,88],[97,98],[97,99],[97,100],[97,101],[97,102],[103,104],[51,41],[82,105],[90,106],[62,107],[108,109],[108,66],[108,110],[108,111],[108,112],[113,114],[115,116],[117,118],[76,119],[17,120],[82,121],[122,123],[14,12],[124,125],[13,126],[127,128],[127,129],[127,130],[131,132],[40,26],[40,29],[18,133],[56,55],[56,54],[56,59],[134,6],[115,62],[135,136],[137,138],[137,137],[22,20],[139,140],[141,142],[143,143],[143,51],[143,133],[144,145],[146,147],[83,82],[148,149],[150,103],[150,150],[49,84],[151,28],[152,153],[153,152],[154,155],[156,157],[139,15],[158,159],[4,2],[4,3],[133,18],[160,161],[84,162],[84,50],[84,49],[84,71],[72,163],[164,139],[165,166],[167,168],[123,122],[169,115],[169,170],[40,171],[123,103],[123,172],[123,61],[123,123],[24,96],[81,80],[173,21],[174,175],[176,177],[176,178],[122,179],[21,22],[180,130],[181,182],[129,183],[184,184],[181,179],[185,52],[70,186],[106,187],[137,175],[137,174],[188,189],[108,190],[191,157],[191,191],[192,193],[192,194],[192,195],[192,2],[192,192],[41,196],[41,197],[41,198],[41,199],[41,200],[41,167],[41,201],[41,202],[41,203],[41,204],[41,205],[41,206],[41,207],[208,208],[61,123],[209,210],[41,128],[211,54],[115,212],[106,189],[137,208],[212,115],[56,58],[30,25],[30,36],[30,41],[155,213],[48,47],[214,180],[96,24],[4,4],[4,62],[155,215],[216,15],[170,170],[71,217],[71,50],[71,49],[13,13],[98,97],[74,1],[74,218],[74,219],[74,215],[74,220],[74,221],[74,222],[74,223],[74,18],[74,224],[74,225],[74,226],[74,227],[74,17],[74,228],[229,64],[100,97],[230,21],[230,20],[231,232],[233,209],[233,234],[233,235],[233,236],[233,159],[233,237],[233,210],[233,238],[233,239],[233,240],[233,241],[233,242],[233,243],[233,244],[245,115],[246,247],[248,74],[13,238],[106,62],[106,249],[13,27],[13,209],[103,250],[40,251],[175,252],[169,251],[115,169],[232,231],[75,253],[75,40],[175,174],[254,137],[249,212],[249,255],[249,256],[222,74],[183,257],[17,218],[183,198],[183,258],[183,183],[19,12],[259,72],[259,260],[75,261],[115,170],[251,169],[262,262],[263,263],[264,265],[264,266],[264,267],[106,268],[269,45],[129,270],[271,272],[81,256],[46,139],[46,15],[46,273],[46,272],[46,274],[46,164],[46,216],[46,45],[275,276],[277,277],[155,114],[158,62],[129,278],[101,101],[29,40],[279,107],[155,208],[231,280],[281,281],[282,283],[155,284],[46,46],[160,28],[160,23],[285,286],[285,211],[258,183],[69,287],[280,231],[212,249],[162,288],[162,71],[162,84],[280,289],[280,270],[280,196],[280,168],[280,167],[280,290],[280,203],[280,14],[280,291],[280,284],[280,129],[280,130],[280,292],[293,19],[254,226],[129,294],[189,106],[295,296],[165,115],[287,69],[287,80],[74,248],[74,297],[74,73],[298,299],[281,137],[147,62],[147,249],[62,300],[301,248],[302,303],[303,302],[304,303],[252,233],[252,166],[252,121],[252,145],[252,115],[136,115],[92,22],[303,304],[268,106],[252,212],[252,288],[252,58],[252,175],[252,305],[252,48],[12,293],[306,62],[281,2],[236,209],[236,238],[236,235],[236,243],[236,244],[102,97],[175,15],[6,5],[17,307],[17,308],[17,1],[17,177],[17,74],[17,309],[17,215],[17,248],[17,220],[17,310],[17,85],[17,311],[17,221],[17,312],[17,222],[17,313],[17,223],[17,0],[17,224],[17,314],[17,225],[17,315],[17,226],[17,73],[17,316],[17,317],[17,228],[245,318],[35,62],[236,319],[167,167],[167,201],[167,133],[167,18],[320,321],[254,62],[322,45],[220,177],[215,295],[321,320],[102,323],[102,300],[147,212],[147,42],[147,105],[11,324],[21,173],[21,325],[21,10],[21,20],[21,306],[21,326],[21,327],[21,230],[328,329],[64,229],[215,5],[209,236],[18,62],[73,330],[73,248],[73,331],[73,297],[73,17],[290,290],[141,332],[69,306],[139,46],[333,114],[334,335],[336,337],[336,116],[336,165],[336,115],[336,136],[336,338],[336,169],[336,251],[336,135],[336,339],[340,134],[251,336],[58,57],[341,74],[341,309],[341,215],[341,311],[341,222],[341,316],[191,342],[191,277],[191,149],[191,262],[191,343],[191,344],[191,345],[191,346],[191,214],[191,347],[191,348],[191,349],[191,350],[191,284],[191,351],[191,231],[191,278],[191,130],[191,178],[191,122],[191,179],[191,352],[191,207],[353,354],[353,185],[90,13],[114,155],[288,233],[142,355],[356,357],[114,113],[47,339],[194,194],[194,195],[63,137],[43,358],[63,63],[359,360],[86,128],[64,5],[160,161],[84,162],[84,50],[84,49],[84,71],[72,163],[164,139],[165,166],[167,168],[123,122],[169,115],[169,170],[40,171],[123,103],[123,172],[123,61],[123,123],[24,96],[81,80],[173,21],[174,175],[176,177],[176,178],[122,179],[21,22],[180,130],[181,182],[129,183],[184,184],[181,179],[185,52],[70,186],[106,187],[137,175],[137,174],[188,189],[108,190],[191,157],[191,191],[192,193],[192,194],[192,195],[192,2],[192,192],[41,196],[41,197],[41,198],[41,199],[41,200],[41,167],[41,201],[41,202],[41,203],[41,204],[41,205],[41,206],[41,207],[208,208],[61,123],[209,210],[41,128],[211,54],[115,212],[106,189],[137,208],[212,115],[56,58],[30,25],[30,36],[30,41],[155,213],[48,47],[214,180],[96,24],[4,4],[4,62],[155,215],[216,15],[170,170],[71,217],[71,50],[71,49],[13,13],[98,97],[74,1],[74,218],[74,219],[74,215],[74,220],[74,221],[74,222],[74,223],[74,18],[74,224],[74,225],[74,226],[74,227],[74,17],[74,228],[229,64],[100,97],[230,21],[230,20],[231,232],[233,209],[233,234],[233,235],[233,236],[233,159],[233,237],[233,210],[233,238],[233,239],[233,240],[233,241],[233,242],[233,243],[233,244],[245,115],[246,247],[248,74],[13,238],[106,62],[106,249],[13,27],[13,209],[103,250],[40,251],[175,252],[169,251],[115,169],[232,231],[75,253],[75,40],[175,174],[254,137],[249,212],[249,255],[249,256],[222,74],[183,257],[17,218],[183,198],[183,258],[183,183],[19,12],[259,72],[259,260],[75,261],[115,170],[251,169],[262,262],[263,263],[264,265],[264,266],[264,267],[106,268],[269,45],[129,270],[271,272],[81,256],[46,139],[46,15],[46,273],[46,272],[46,274],[46,164],[46,216],[46,45],[275,276],[277,277],[155,114],[158,62],[129,278],[101,101],[29,40],[279,107],[155,208],[231,280],[281,281],[282,283],[155,284],[46,46],[160,28],[160,23],[285,286],[285,211],[258,183],[69,287],[280,231],[212,249],[162,288],[162,71],[162,84],[280,289],[280,270],[280,196],[280,168],[280,167],[280,290],[280,203],[280,14],[280,291],[280,284],[280,129],[280,130],[280,292],[293,19],[254,226],[129,294],[189,106],[295,296],[165,115],[287,69],[287,80],[74,248],[74,297],[74,73],[298,299],[281,137],[147,62],[147,249],[62,300],[301,248],[302,303],[303,302],[304,303],[252,233],[252,166],[252,121],[252,145],[252,115],[136,115],[92,22],[303,304],[268,106],[252,212],[252,288],[252,58],[252,175],[252,305],[252,48],[12,293],[306,62],[281,2],[236,209],[236,238],[236,235],[236,243],[236,244],[102,97],[175,15],[6,5],[17,307],[17,308],[17,1],[17,177],[17,74],[17,309],[17,215],[17,248],[17,220],[17,310],[17,85],[17,311],[17,221],[17,312],[17,222],[17,313],[17,223],[17,0],[17,224],[17,314],[17,225],[17,315],[17,226],[17,73],[17,316],[17,317],[17,228]]
+  }
+};
+
+// ═══════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════
+const APP = {
+  dsId:'karate', algo:'louvain', mode:'single',
+  budget:8, lambda:0.5,
+  graph:null, communities:null,
+  targets:[], // array of {commId, members, color}
+  hiddenLinks:null, hiddenComms:null,
+  perturbations:[], sims:{}, step:1
+};
+
+// ═══════════════════════════════════════════════════════════
+// GRAPH UTILS
+// ═══════════════════════════════════════════════════════════
+function buildGraph(dsId){
+  const ds=DATASETS[dsId];
+  return {
+    nodes:ds.nodes.map(n=>({...n})),
+    links:ds.edges.map(([s,t])=>({source:s,target:t}))
+  };
+}
+function getAdj(nodes,links){
+  const a={};nodes.forEach(n=>a[n.id]=new Set());
+  links.forEach(l=>{
+    const s=typeof l.source==='object'?l.source.id:l.source;
+    const t=typeof l.target==='object'?l.target.id:l.target;
+    a[s].add(t);a[t].add(s);
+  });
+  return a;
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMMUNITY DETECTION
+// ═══════════════════════════════════════════════════════════
+function detectLouvain(nodes,links){
+  const adj=getAdj(nodes,links);
+  const m=links.length;
+  const deg={};nodes.forEach(n=>deg[n.id]=adj[n.id].size);
+  const comm={};nodes.forEach(n=>comm[n.id]=n.id);
+  let improved=true,passes=0;
+  while(improved&&passes<60){
+    improved=false;passes++;
+    const order=[...nodes.map(n=>n.id)].sort(()=>Math.random()-.5);
+    for(const id of order){
+      const cur=comm[id];
+      const nbComms={};
+      for(const nb of adj[id])nbComms[comm[nb]]=(nbComms[comm[nb]]||0)+1;
+      let best=cur,bestG=0;
+      for(const[c,kIn] of Object.entries(nbComms)){
+        if(c===String(cur))continue;
+        const cd=nodes.filter(n=>comm[n.id]===+c).reduce((s,n)=>s+deg[n.id],0);
+        const g=kIn/m-(deg[id]*cd)/(2*m*m);
+        if(g>bestG){bestG=g;best=+c;}
+      }
+      if(best!==cur){comm[id]=best;improved=true;}
+    }
+  }
+  const uniq=[...new Set(Object.values(comm))];
+  const map={};uniq.forEach((c,i)=>map[c]=i);
+  const res={};nodes.forEach(n=>res[n.id]=map[comm[n.id]]);
+  return res;
+}
+function detectLPA(nodes,links){
+  const adj=getAdj(nodes,links);
+  const labels={};nodes.forEach(n=>labels[n.id]=n.id);
+  for(let it=0;it<25;it++){
+    const order=[...nodes.map(n=>n.id)].sort(()=>Math.random()-.5);
+    let changed=false;
+    for(const id of order){
+      const nb={};
+      for(const n of adj[id])nb[labels[n]]=(nb[labels[n]]||0)+1;
+      if(!Object.keys(nb).length)continue;
+      const mx=Math.max(...Object.values(nb));
+      const best=+[...Object.keys(nb).filter(k=>nb[k]===mx)].sort(()=>Math.random()-.5)[0];
+      if(best!==labels[id]){labels[id]=best;changed=true;}
+    }
+    if(!changed)break;
+  }
+  const uniq=[...new Set(Object.values(labels))];
+  const map={};uniq.forEach((l,i)=>map[l]=i);
+  const res={};nodes.forEach(n=>res[n.id]=map[labels[n.id]]);
+  return res;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SAFENESS HELPERS
+// ═══════════════════════════════════════════════════════════
+function computeRho(adj,comm){
+  const cn=[...comm];let tot=0;
+  for(let i=0;i<cn.length;i++){
+    const dist={[cn[i]]:0};const q=[cn[i]];
+    while(q.length){const c=q.shift();for(const nb of adj[c])if(!(nb in dist)){dist[nb]=dist[c]+1;q.push(nb);}}
+    for(let j=0;j<cn.length;j++)if(i!==j)tot+=dist[cn[j]]||0;
+  }
+  return tot;
+}
+function computePsi(adj,comm){
+  const n=comm.size;if(n<=1)return 0;
+  const rho=computeRho(adj,[...comm]);
+  const rMin=2*(n-1)*(n-1);
+  let rMax=0;for(let k=1;k<=n;k++){for(let i=1;i<=n-k;i++)rMax+=i;for(let j=0;j<k-1;j++)rMax+=j;}
+  if(rMax===rMin)return 0;
+  return Math.max(0,Math.min(1,(rho-rMin)/(rMax-rMin)));
+}
+function computePhi(adj,comm){
+  let t=0;
+  for(const u of comm){
+    const d=adj[u].size;if(!d)continue;
+    t+=[...adj[u]].filter(v=>!comm.has(v)).length/d;
+  }
+  return t;
+}
+function computeSafeness(adj,comm){
+  return .5*computePsi(adj,comm)+.5*computePhi(adj,comm);
+}
+function isBridge(adj,comm,u,v){
+  const ta={};
+  for(const n of comm)ta[n]=new Set([...adj[n]].filter(x=>comm.has(x)));
+  ta[u].delete(v);ta[v].delete(u);
+  const start=[...comm][0];const vis=new Set([start]);const q=[start];
+  while(q.length){const c=q.shift();for(const nb of ta[c])if(!vis.has(nb)){vis.add(nb);q.push(nb);}}
+  return vis.size!==comm.size;
+}
+
+// ═══════════════════════════════════════════════════════════
+// MHs-JOINT ALGORITHM
+// ═══════════════════════════════════════════════════════════
+function applyMHsJoint(nodes, rawLinks, targets, budget, lambda){
+  // rawLinks: array of {source:id, target:id}
+  let links=rawLinks.map(l=>({source:+l.source,target:+l.target}));
+  const allIds=nodes.map(n=>n.id);
+  const targetSets=targets.map(t=>new Set(t.members));
+  const targetAll=new Set(targets.flatMap(t=>t.members));
+  const log=[], perts=[];
+
+  const mkAdj=ls=>{const a={};allIds.forEach(id=>a[id]=new Set());ls.forEach(l=>{a[l.source].add(l.target);a[l.target].add(l.source);});return a;};
+
+  let adj=mkAdj(links);
+  const sigBefore=targetSets.map(ts=>computeSafeness(adj,ts));
+  log.push({c:'a',m:`Initial mean σ(T) = ${(sigBefore.reduce((s,v)=>s+v,0)/sigBefore.length).toFixed(4)}`});
+  targets.forEach((t,i)=>log.push({c:'a',m:`  C${t.commId}: σ=${sigBefore[i].toFixed(4)} (${t.members.length} nodes)`}));
+
+  for(let b=0;b<budget;b++){
+    adj=mkAdj(links);
+    const sigCur=targetSets.map(ts=>computeSafeness(adj,ts));
+
+    // ── candidate: best inter-C ADD for each target community
+    let bestOp=null, bestPhi=-Infinity;
+
+    for(let ti=0;ti<targets.length;ti++){
+      const comm=targetSets[ti];
+      // find node with min inter-link ratio
+      let minR=Infinity,np=null;
+      for(const u of comm){
+        const d=adj[u].size;
+        const inter=[...adj[u]].filter(v=>!comm.has(v)).length;
+        const r=d>0?inter/d:0;
+        if(r<minR){minR=r;np=u;}
+      }
+      if(np===null)continue;
+      const ext=allIds.filter(v=>!comm.has(v)&&!adj[np].has(v)&&v!==np);
+      for(const nt of ext.slice(0,15)){
+        const d=adj[np].size;
+        const inter=[...adj[np]].filter(v=>!comm.has(v)).length;
+        const dSig=(d-inter)/(d*(d+1));
+        // mean gain: this op directly improves community ti; others unchanged
+        const meanGain=dSig/targets.length;
+        // penalty: if nt is in another target community
+        const penalty=targetAll.has(nt)&&!comm.has(nt)?lambda*1/Math.max(1,targets.length-1):0;
+        const score=meanGain-penalty;
+        if(score>bestPhi){
+          bestPhi=score;
+          bestOp={type:'ADD',u:np,v:nt,ti,gain:score.toFixed(4),rawGain:dSig.toFixed(4),penalty:penalty.toFixed(4)};
+        }
+      }
+    }
+
+    // ── candidate: best intra-C DELETE across all targets
+    for(let ti=0;ti<targets.length;ti++){
+      const comm=targetSets[ti];
+      const intra=links.filter(l=>comm.has(l.source)&&comm.has(l.target));
+      for(const lk of intra){
+        if(isBridge(adj,comm,lk.source,lk.target))continue;
+        const newAdj=mkAdj(links.filter(ll=>!(ll.source===lk.source&&ll.target===lk.target)&&!(ll.source===lk.target&&ll.target===lk.source)));
+        const newSig=computeSafeness(newAdj,comm);
+        const dSig=newSig-sigCur[ti];
+        const meanGain=dSig/targets.length;
+        if(meanGain>bestPhi){
+          bestPhi=meanGain;
+          bestOp={type:'DEL',u:lk.source,v:lk.target,ti,gain:meanGain.toFixed(4),rawGain:dSig.toFixed(4),penalty:'0'};
+        }
+      }
+    }
+
+    if(!bestOp||+bestOp.gain<=0){
+      log.push({c:'w',m:`[β=${b+1}] No improving operation. Stopping early.`});
+      break;
+    }
+
+    if(bestOp.type==='ADD'){
+      links.push({source:bestOp.u,target:bestOp.v});
+      perts.push({...bestOp,idx:b+1});
+      log.push({c:'s',m:`[β=${b+1}] ADD (${bestOp.u}↔${bestOp.v}) for C${targets[bestOp.ti].commId} ΔΦ=${bestOp.gain}${+bestOp.penalty>0?' [penalised -'+bestOp.penalty+']':''}`});
+    } else {
+      links=links.filter(l=>!(l.source===bestOp.u&&l.target===bestOp.v)&&!(l.source===bestOp.v&&l.target===bestOp.u));
+      perts.push({...bestOp,idx:b+1});
+      log.push({c:'w',m:`[β=${b+1}] DEL (${bestOp.u}↔${bestOp.v}) from C${targets[bestOp.ti].commId} ΔΦ=${bestOp.gain}`});
+    }
+  }
+
+  const finalAdj=mkAdj(links);
+  const sigAfter=targetSets.map(ts=>computeSafeness(finalAdj,ts));
+  const meanBefore=sigBefore.reduce((s,v)=>s+v,0)/sigBefore.length;
+  const meanAfter=sigAfter.reduce((s,v)=>s+v,0)/sigAfter.length;
+  log.push({c:'s',m:`Mean σ(T): ${meanBefore.toFixed(4)} → ${meanAfter.toFixed(4)} (Δ=${(meanAfter-meanBefore).toFixed(4)})`});
+
+  return {links, perts, log, sigBefore, sigAfter};
+}
+
+// ═══════════════════════════════════════════════════════════
+// H-SCORE
+// ═══════════════════════════════════════════════════════════
+function computeH(communities, targetMembers){
+  const target=new Set(targetMembers);
+  const cm={};Object.entries(communities).forEach(([n,c])=>{if(!cm[c])cm[c]=[];cm[c].push(+n);});
+  const comms=Object.values(cm);
+  let maxR=0;
+  for(const c of comms){const r=c.filter(n=>target.has(n)).length/target.size;if(r>maxR)maxR=r;}
+  const rel=comms.filter(c=>c.some(n=>target.has(n)));
+  let meanP=0;
+  if(rel.length){for(const c of rel)meanP+=c.filter(n=>target.has(n)).length/c.length;meanP/=rel.length;}
+  return Math.max(0,Math.min(1,.5*(1-maxR)+.5*(1-meanP)));
+}
+
+// ═══════════════════════════════════════════════════════════
+// D3 FORCE GRAPH — redesigned visualization
+// ═══════════════════════════════════════════════════════════
+function drawGraph(svgId, nodes, links, communities, targetSets=[], addedEdges=[], deletedEdges=[]){
+  const svgEl=document.getElementById(svgId);
+  if(!svgEl)return;
+  svgEl.innerHTML='';
+
+  const w=svgEl.clientWidth||700, h=svgEl.clientHeight||400;
+
+  const svg=d3.select('#'+svgId);
+  const defs=svg.append('defs');
+
+  // glow filter per target color
+  targetSets.forEach((ts,i)=>{
+    const col=ts.color.replace('#','');
+    const f=defs.append('filter').attr('id',`glow-${svgId}-${i}`).attr('x','-50%').attr('y','-50%').attr('width','200%').attr('height','200%');
+    f.append('feGaussianBlur').attr('stdDeviation','4').attr('result','blur');
+    const m=f.append('feMerge');
+    m.append('feMergeNode').attr('in','blur');
+    m.append('feMergeNode').attr('in','SourceGraphic');
+  });
+
+  const g=svg.append('g');
+  svg.call(d3.zoom().scaleExtent([.25,5]).on('zoom',e=>g.attr('transform',e.transform)));
+
+  // Build target membership map
+  const nodeTargetIdx={};
+  targetSets.forEach((ts,ti)=>ts.members.forEach(n=>nodeTargetIdx[n]=ti));
+
+  // Edge sets
+  const addedSet=new Set(addedEdges.map(e=>`${Math.min(e[0],e[1])}-${Math.max(e[0],e[1])}`));
+
+  // community color map
+  const commNums=[...new Set(Object.values(communities))].sort((a,b)=>a-b);
+  const colorMap={};commNums.forEach((c,i)=>colorMap[c]=PALETTE[i%PALETTE.length]);
+
+  // LINKS
+  const link=g.append('g').selectAll('line').data(links).enter().append('line')
+    .attr('stroke',d=>{
+      const s=+d.source,t=+d.target;
+      const key=`${Math.min(s,t)}-${Math.max(s,t)}`;
+      return addedSet.has(key)?'#34d399':'rgba(255,255,255,0.055)';
+    })
+    .attr('stroke-width',d=>{
+      const s=+d.source,t=+d.target;
+      return addedSet.has(`${Math.min(s,t)}-${Math.max(s,t)}`)?2:.8;
+    })
+    .attr('stroke-dasharray',d=>{
+      const s=+d.source,t=+d.target;
+      return addedSet.has(`${Math.min(s,t)}-${Math.max(s,t)}`)?'5,3':'none';
+    });
+
+  // NODE BASE CIRCLES (community color fill)
+  const nodeBase=g.append('g').selectAll('circle.base').data(nodes).enter().append('circle')
+    .attr('class','base')
+    .attr('r',d=>nodeTargetIdx[d.id]!==undefined?10:6)
+    .attr('fill',d=>colorMap[communities[d.id]]||'#555')
+    .attr('fill-opacity',d=>nodeTargetIdx[d.id]!==undefined?.95:.7)
+    .attr('stroke','none');
+
+  // TARGET NODE RINGS — dashed spinning halo
+  // Instead of pulse, we use: outer dashed ring + colored stroke ring
+  const targetNodes=nodes.filter(n=>nodeTargetIdx[n.id]!==undefined);
+
+  // Outer glow ring (static, semi-transparent)
+  g.append('g').selectAll('circle.glow-ring').data(targetNodes).enter().append('circle')
+    .attr('class','glow-ring')
+    .attr('r',16)
+    .attr('fill','none')
+    .attr('stroke',d=>targetSets[nodeTargetIdx[d.id]].color)
+    .attr('stroke-width',1)
+    .attr('stroke-opacity',.25);
+
+  // Inner solid border ring
+  g.append('g').selectAll('circle.border-ring').data(targetNodes).enter().append('circle')
+    .attr('class','border-ring')
+    .attr('r',11)
+    .attr('fill','none')
+    .attr('stroke',d=>targetSets[nodeTargetIdx[d.id]].color)
+    .attr('stroke-width',2)
+    .attr('stroke-opacity',.9);
+
+  // Dashed outer animated ring
+  const dashRing=g.append('g').selectAll('circle.dash-ring').data(targetNodes).enter().append('circle')
+    .attr('class','dash-ring')
+    .attr('r',18)
+    .attr('fill','none')
+    .attr('stroke',d=>targetSets[nodeTargetIdx[d.id]].color)
+    .attr('stroke-width',1)
+    .attr('stroke-dasharray','4,4')
+    .attr('stroke-opacity',.45);
+
+  // Animate dash rings with CSS
+  dashRing.each(function(d,i){
+    const el=this;
+    let offset=0;
+    const speed=i%2===0?0.06:0.05;
+    function tick(){
+      offset+=speed;
+      el.setAttribute('stroke-dashoffset',offset);
+      requestAnimationFrame(tick);
+    }
+    tick();
+  });
+
+  // NODE LABELS
+  const nodeLabel=g.append('g').selectAll('text').data(nodes).enter().append('text')
+    .attr('text-anchor','middle').attr('dy','0.32em')
+    .attr('pointer-events','none')
+    .attr('font-family',"'IBM Plex Mono',monospace")
+    .attr('font-size',d=>nodeTargetIdx[d.id]!==undefined?8.5:7)
+    .attr('font-weight',d=>nodeTargetIdx[d.id]!==undefined?'600':'400')
+    .attr('fill',d=>nodeTargetIdx[d.id]!==undefined?'#fff':'rgba(255,255,255,0.65)')
+    .text(d=>d.id);
+
+  // DRAG + TOOLTIP
+  const tip=document.getElementById('tip');
+  nodeBase.on('mouseover',(e,d)=>{
+    const ti=nodeTargetIdx[d.id];
+    const comm=communities[d.id];
+    let html=`<b>Node ${d.id}</b><br>Community: ${comm}`;
+    if(ti!==undefined)html+=`<br><span style="color:${targetSets[ti].color}">★ Target C${targetSets[ti].commId}</span>`;
+    tip.innerHTML=html;tip.classList.add('show');
+  }).on('mousemove',e=>{
+    tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-24)+'px';
+  }).on('mouseout',()=>tip.classList.remove('show'));
+
+  nodeBase.call(d3.drag()
+    .on('start',(e,d)=>{if(!e.active)sim.alphaTarget(.3).restart();d.fx=d.x;d.fy=d.y;})
+    .on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y;})
+    .on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;})
+  );
+
+  const allRings=[
+    {sel:g.selectAll('circle.glow-ring'),r:16},
+    {sel:g.selectAll('circle.border-ring'),r:11},
+    {sel:g.selectAll('circle.dash-ring'),r:18},
+  ];
+
+  const sim=d3.forceSimulation(nodes)
+    .force('link',d3.forceLink(links).id(d=>d.id).distance(d=>{
+      const si=+d.source,ti=+d.target;
+      if(nodeTargetIdx[si]!==undefined&&nodeTargetIdx[ti]!==undefined&&nodeTargetIdx[si]!==nodeTargetIdx[ti])return 80;
+      return 40;
+    }).strength(.5))
+    .force('charge',d3.forceManyBody().strength(-200))
+    .force('center',d3.forceCenter(w/2,h/2))
+    .force('collide',d3.forceCollide().radius(d=>nodeTargetIdx[d.id]!==undefined?22:12))
+    .on('tick',()=>{
+      link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+      nodeBase.attr('cx',d=>d.x).attr('cy',d=>d.y);
+      nodeLabel.attr('x',d=>d.x).attr('y',d=>d.y);
+      allRings.forEach(({sel})=>sel.attr('cx',d=>d.x).attr('cy',d=>d.y));
+    });
+
+  if(APP.sims[svgId])APP.sims[svgId].stop();
+  APP.sims[svgId]=sim;
+  return colorMap;
+}
+
+// ═══════════════════════════════════════════════════════════
+// LEGEND + TARGET CHIPS
+// ═══════════════════════════════════════════════════════════
+function buildLegend(containerId,itemsId,communities,targetCommIds=[]){
+  const c=document.getElementById(containerId);
+  const items=document.getElementById(itemsId);
+  if(!c||!items)return;
+  const commNums=[...new Set(Object.values(communities))].sort((a,b)=>a-b);
+  const colorMap={};commNums.forEach((n,i)=>colorMap[n]=PALETTE[i%PALETTE.length]);
+  c.style.display='block';
+  items.innerHTML='';
+  commNums.forEach(cn=>{
+    const count=Object.values(communities).filter(v=>v===cn).length;
+    const isTgt=targetCommIds.includes(cn);
+    const d=document.createElement('div');
+    d.className='glegend-item';
+    d.innerHTML=`<div class="glegend-dot" style="background:${colorMap[cn]};${isTgt?'box-shadow:0 0 5px '+colorMap[cn]:''};border-radius:${isTgt?'50%':'2px'}"></div>C${cn} (${count}${isTgt?' ★':''})`;
+    items.appendChild(d);
+  });
+}
+
+function buildTargetChips(containerId,targets){
+  const c=document.getElementById(containerId);
+  if(!c)return;
+  c.innerHTML='';
+  targets.forEach(t=>{
+    const d=document.createElement('div');
+    d.className='target-chip';
+    d.style.cssText=`background:color-mix(in srgb,${t.color} 12%,transparent);border:1px solid color-mix(in srgb,${t.color} 35%,transparent);`;
+    d.innerHTML=`<div class="target-dot" style="background:${t.color}"></div><span style="font-family:var(--mono);font-size:9px;color:${t.color};">C${t.commId} (${t.members.length})</span>`;
+    c.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOG
+// ═══════════════════════════════════════════════════════════
+function log(msg,cls=''){
+  const b=document.getElementById('logBox');
+  if(b.innerHTML.includes('Waiting'))b.innerHTML='';
+  const t=new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  b.innerHTML+=`<div><span class="log-t">${t}</span><span class="log-${cls||'x'}" style="${!cls?'color:var(--tx2)':''}"> ${msg}</span></div>`;
+  b.scrollTop=b.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════════
+// DETECTION
+// ═══════════════════════════════════════════════════════════
+function runDetection(){
+  APP.graph=buildGraph(APP.dsId);
+  const {nodes,links}=APP.graph;
+  APP.targets=[];
+  APP.hiddenLinks=null;
+  APP.hiddenComms=null;
+  APP.perturbations=[];
+
+  const detect=APP.algo==='louvain'?detectLouvain:detectLPA;
+  let best=null,bk=0;
+  for(let i=0;i<6;i++){const c=detect(nodes,links);const k=new Set(Object.values(c)).size;if(k>bk){bk=k;best=c;}}
+  APP.communities=best;
+
+  // reset hidden panels
+  ['emptyAC','emptyA2'].forEach(id=>document.getElementById(id).style.display='flex');
+  ['svgAC','svgA2'].forEach(id=>document.getElementById(id).innerHTML='');
+  ['legendAC','legendA2'].forEach(id=>document.getElementById(id).style.display='none');
+
+  const tgtIds=APP.targets.map(t=>t.commId);
+  // draw before graphs
+  drawGraph('svgBC',nodes,links,APP.communities,[]);
+  drawGraph('svgB2',nodes,links,APP.communities,[]);
+  buildLegend('legendBC','legendBCitems',APP.communities,tgtIds);
+  buildLegend('legendB2','legendB2items',APP.communities,tgtIds);
+  document.getElementById('algoLabelB').textContent=APP.algo==='louvain'?'Louvain':'LPA';
+  document.getElementById('algoLabelA').textContent=APP.algo==='louvain'?'Louvain':'LPA';
+
+  // build community list
+  buildCommList();
+  updateStats();
+  setNums(2);
+
+  log(`${DATASETS[APP.dsId].nodes.length} nodes, ${links.length} edges`,'a');
+  log(`${APP.algo==='louvain'?'Louvain':'Label Propagation'} → ${bk} communities`,'s');
+  document.getElementById('btnHide').disabled=true;
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMMUNITY LIST (multi-select)
+// ═══════════════════════════════════════════════════════════
+function buildCommList(){
+  const list=document.getElementById('commList');
+  list.innerHTML='';
+  if(!APP.communities){list.innerHTML='<div style="color:var(--tx3);font-family:var(--mono);font-size:10px;padding:8px 0;">Run detection first</div>';return;}
+  const cm={};
+  Object.entries(APP.communities).forEach(([n,c])=>{if(!cm[c])cm[c]=[];cm[c].push(+n);});
+  const sorted=Object.entries(cm).sort((a,b)=>b[1].length-a[1].length);
+  sorted.forEach(([cid,members],idx)=>{
+    const commColor=PALETTE[+cid%PALETTE.length];
+    const d=document.createElement('div');
+    d.className='comm-item';
+    d.dataset.cid=cid;
+    d.style.setProperty('--item-color',TARGET_COLORS[idx%TARGET_COLORS.length]);
+    d.innerHTML=`
+      <div class="comm-swatch" style="background:${commColor}"></div>
+      <div class="comm-info">
+        <div class="comm-name-text">Community ${cid}</div>
+        <div class="comm-size-text">${members.length} nodes</div>
+      </div>
+      <div class="comm-check"><span class="comm-check-mark">✓</span></div>`;
+    d.addEventListener('click',()=>toggleTarget(+cid,members,idx));
+    list.appendChild(d);
+  });
+  setNums(3);
+}
+
+function toggleTarget(commId,members,colorIdx){
+  const isMulti=APP.mode==='multi';
+  const existing=APP.targets.findIndex(t=>t.commId===commId);
+
+  if(existing>=0){
+    // deselect
+    APP.targets.splice(existing,1);
+  } else {
+    if(!isMulti){
+      // single mode: replace
+      APP.targets=[];
+      document.querySelectorAll('.comm-item').forEach(el=>el.classList.remove('selected'));
+    }
+    if(isMulti&&APP.targets.length>=5)return; // max 5 targets
+    APP.targets.push({commId,members,color:TARGET_COLORS[colorIdx%TARGET_COLORS.length]});
+  }
+
+  // update UI
+  document.querySelectorAll('.comm-item').forEach(el=>{
+    el.classList.toggle('selected',APP.targets.some(t=>t.commId===+el.dataset.cid));
+  });
+  document.getElementById('selectedCount').textContent=APP.targets.length;
+
+  const tgtIds=APP.targets.map(t=>t.commId);
+
+  // redraw before graphs with target highlights
+  if(APP.graph){
+    drawGraph('svgBC',APP.graph.nodes,APP.graph.links,APP.communities,APP.targets);
+    drawGraph('svgB2',APP.graph.nodes,APP.graph.links,APP.communities,APP.targets);
+    buildLegend('legendBC','legendBCitems',APP.communities,tgtIds);
+    buildLegend('legendB2','legendB2items',APP.communities,tgtIds);
+    buildTargetChips('targetChipsB',APP.targets);
+    buildTargetChips('targetChipsB2',APP.targets);
+  }
+
+  document.getElementById('btnHide').disabled=APP.targets.length===0;
+  updateStats();
+  if(APP.targets.length>0)setNums(4);
+}
+
+// ═══════════════════════════════════════════════════════════
+// APPLY HIDING
+// ═══════════════════════════════════════════════════════════
+function applyHiding(){
+  if(!APP.targets.length)return;
+  log(`Applying ${APP.mode==='multi'?'MHs-Joint':'Hs'} with β=${APP.budget}${APP.mode==='multi'?', λ='+APP.lambda:''}...`,'a');
+  log(`Targets: ${APP.targets.map(t=>'C'+t.commId).join(', ')}`,'a');
+
+  const {nodes,links}=APP.graph;
+  const rawLinks=links.map(l=>({source:typeof l.source==='object'?l.source.id:l.source,target:typeof l.target==='object'?l.target.id:l.target}));
+
+  const result=applyMHsJoint(nodes,rawLinks,APP.targets,APP.budget,APP.mode==='multi'?APP.lambda:0);
+  APP.perturbations=result.perts;
+
+  result.log.forEach(l=>log(l.m,l.c));
+
+  // re-detect
+  const newLinks=result.links;
+  const detect=APP.algo==='louvain'?detectLouvain:detectLPA;
+  let bestNew=null,bk=0;
+  for(let i=0;i<6;i++){const c=detect(nodes,newLinks);const k=new Set(Object.values(c)).size;if(k>=bk){bk=k;bestNew=c;}}
+  APP.hiddenComms=bestNew;
+  APP.hiddenLinks=newLinks;
+
+  const addedPairs=result.perts.filter(p=>p.type==='ADD').map(p=>[p.u,p.v]);
+  const tgtIds=APP.targets.map(t=>t.commId);
+
+  document.getElementById('emptyAC').style.display='none';
+  document.getElementById('emptyA2').style.display='none';
+  drawGraph('svgAC',nodes,newLinks,bestNew,APP.targets,addedPairs);
+  drawGraph('svgA2',nodes,newLinks,bestNew,APP.targets,addedPairs);
+  buildLegend('legendAC','legendACitems',bestNew,tgtIds);
+  buildLegend('legendA2','legendA2items',bestNew,tgtIds);
+  buildTargetChips('targetChipsA',APP.targets);
+  buildTargetChips('targetChipsA2',APP.targets);
+
+  // H-scores
+  const allTargetMembers=APP.targets.flatMap(t=>t.members);
+  const hBefore=computeH(APP.communities,allTargetMembers);
+  const hAfter=computeH(bestNew,allTargetMembers);
+  document.getElementById('hH1').textContent=hBefore.toFixed(3);
+  document.getElementById('hH2').textContent=hAfter.toFixed(3);
+  document.getElementById('hGain').textContent='+'+(hAfter-hBefore).toFixed(3);
+  document.getElementById('hPerts').textContent=result.perts.length;
+
+  // per-community scores
+  const cs=document.getElementById('commScores');
+  cs.innerHTML='';
+  APP.targets.forEach((t,i)=>{
+    const adj0=getAdj(nodes,rawLinks);
+    const adj1=getAdj(nodes,newLinks);
+    const ts=new Set(t.members);
+    const s0=computeSafeness(adj0,ts).toFixed(3);
+    const s1=computeSafeness(adj1,ts).toFixed(3);
+    const gain=(+s1-+s0).toFixed(3);
+    const h0=computeH(APP.communities,t.members).toFixed(3);
+    const h1=computeH(bestNew,t.members).toFixed(3);
+    const d=document.createElement('div');
+    d.className='cscore-card';
+    d.style.setProperty('--card-color',t.color);
+    d.innerHTML=`
+      <div class="cscore-name" style="color:${t.color}">Community ${t.commId}</div>
+      <div class="cscore-row"><span class="cscore-key">σ before</span><span class="cscore-val">${s0}</span></div>
+      <div class="cscore-row"><span class="cscore-key">σ after</span><span class="cscore-val">${s1}</span></div>
+      <div class="cscore-row"><span class="cscore-key">Δσ</span><span class="cscore-gain">+${gain}</span></div>
+      <div class="cscore-row"><span class="cscore-key">H before</span><span class="cscore-val">${h0}</span></div>
+      <div class="cscore-row"><span class="cscore-key">H after</span><span class="cscore-val">${h1}</span></div>`;
+    cs.appendChild(d);
+  });
+
+  // perturbation table
+  const tbody=document.getElementById('pertBody');
+  tbody.innerHTML='';
+  if(!result.perts.length){
+    tbody.innerHTML='<tr><td colspan="5" style="color:var(--tx3);padding:10px;">No perturbations applied</td></tr>';
+  } else {
+    result.perts.forEach(p=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${p.idx}</td><td class="${p.type==='ADD'?'op-add':'op-del'}">${p.type==='ADD'?'+ ADD':'− DEL'}</td><td>(${p.u}↔${p.v})</td><td style="color:${APP.targets[p.ti]?.color||'var(--tx2)'}">C${APP.targets[p.ti]?.commId}</td><td>${p.gain}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  updateStats();
+  log(`H-score: ${hBefore.toFixed(3)} → ${hAfter.toFixed(3)} (+${(hAfter-hBefore).toFixed(3)})`,'s');
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════
+function reset(){
+  Object.values(APP.sims).forEach(s=>s.stop());
+  APP.graph=null;APP.communities=null;APP.targets=[];APP.hiddenLinks=null;APP.hiddenComms=null;APP.perturbations=[];APP.sims={};
+  ['svgBC','svgB2','svgAC','svgA2'].forEach(id=>document.getElementById(id).innerHTML='');
+  ['legendBC','legendB2','legendAC','legendA2'].forEach(id=>document.getElementById(id).style.display='none');
+  ['emptyAC','emptyA2'].forEach(id=>document.getElementById(id).style.display='flex');
+  ['targetChipsB','targetChipsB2','targetChipsA','targetChipsA2'].forEach(id=>document.getElementById(id).innerHTML='');
+  buildCommList();
+  document.getElementById('selectedCount').textContent='0';
+  document.getElementById('btnHide').disabled=true;
+  document.getElementById('logBox').innerHTML='<span style="color:var(--tx3);">Waiting...</span>';
+  document.getElementById('pertBody').innerHTML='<tr><td colspan="5" style="color:var(--tx3);padding:10px;">No perturbations yet</td></tr>';
+  document.getElementById('commScores').innerHTML='<div style="color:var(--tx3);font-family:var(--mono);font-size:10px;">Run algorithm first</div>';
+  ['hH1','hH2','hGain','hPerts'].forEach(id=>document.getElementById(id).textContent='—');
+  updateStats();setNums(1);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATS + STEP NUMS
+// ═══════════════════════════════════════════════════════════
+function updateStats(){
+  const n=APP.graph?APP.graph.nodes.length:'—';
+  const e=APP.hiddenLinks?APP.hiddenLinks.length:APP.graph?APP.graph.links.length:'—';
+  const k=APP.communities?new Set(Object.values(APP.communities)).size:'—';
+  const t=APP.targets.length||'—';
+  document.getElementById('stNodes').textContent=n;
+  document.getElementById('stEdges').textContent=e;
+  document.getElementById('stComms').textContent=k;
+  document.getElementById('stTargets').textContent=t;
+}
+function setNums(active){
+  for(let i=1;i<=4;i++){
+    const el=document.getElementById('sn'+i);
+    if(!el)continue;
+    el.className='sb-label-num'+(i<active?' done':i===active?' active':'');
+    if(i<active)el.textContent='✓';
+    else el.textContent=i;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// EVENT LISTENERS
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.ds-card').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('.ds-card').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');APP.dsId=c.dataset.ds;reset();
+  });
+});
+document.querySelectorAll('.algo-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.algo-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');APP.algo=b.dataset.algo;
+  });
+});
+document.getElementById('btnDetect').addEventListener('click',runDetection);
+document.getElementById('btnHide').addEventListener('click',applyHiding);
+document.getElementById('btnReset').addEventListener('click',reset);
+
+document.querySelectorAll('.hmode-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.hmode-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    APP.mode=b.dataset.mode;
+    document.getElementById('lambdaRow').style.display=APP.mode==='multi'?'block':'none';
+    document.getElementById('modeHint').textContent=APP.mode==='multi'?'select up to 5':'select 1';
+    // clear selections
+    APP.targets=[];
+    document.querySelectorAll('.comm-item').forEach(el=>el.classList.remove('selected'));
+    document.getElementById('selectedCount').textContent='0';
+    document.getElementById('btnHide').disabled=true;
+    if(APP.graph){
+      drawGraph('svgBC',APP.graph.nodes,APP.graph.links,APP.communities,[]);
+      drawGraph('svgB2',APP.graph.nodes,APP.graph.links,APP.communities,[]);
+      buildTargetChips('targetChipsB',[]);
+      buildTargetChips('targetChipsB2',[]);
+    }
+  });
+});
+
+document.querySelectorAll('.vtab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.vtab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.vpanel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+    setTimeout(()=>Object.values(APP.sims).forEach(s=>s.alpha(.05).restart()),80);
+  });
+});
+
+// init
+setNums(1);updateStats();
+document.getElementById('modeHint').textContent='select 1';
+</script>
+</body>
+</html>
