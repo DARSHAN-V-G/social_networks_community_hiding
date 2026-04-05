@@ -2,6 +2,7 @@
 
 const APP = {
   mode: 'single',
+  theme: 'light',
   graph: null,
   detection: null,
   targets: [],        // [{commId, members, color}]
@@ -13,9 +14,37 @@ const TARGET_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7'];
 
 // ── INIT ─────────────────────────────────────────────────────
 async function init() {
+  initTheme();
   loadPreloadedList();
   bindEvents();
   setStep(1);
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme');
+  APP.theme = savedTheme === 'dark' ? 'dark' : 'light';
+  applyTheme(APP.theme);
+}
+
+function applyTheme(theme) {
+  APP.theme = theme;
+  if (theme === 'dark') {
+    document.body.setAttribute('data-theme', 'dark');
+  } else {
+    document.body.removeAttribute('data-theme');
+  }
+
+  const themeBtn = document.getElementById('themeToggle');
+  if (!themeBtn) return;
+  const isDark = theme === 'dark';
+  themeBtn.textContent = isDark ? 'Light mode' : 'Dark mode';
+  themeBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+
+function toggleTheme() {
+  const next = APP.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  localStorage.setItem('theme', next);
 }
 
 // ── PRELOADED DATASETS ───────────────────────────────────────
@@ -353,6 +382,8 @@ function switchTab(name) {
 // ── EVENT BINDING ─────────────────────────────────────────────
 function bindEvents() {
   bindUpload();
+
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
   document.getElementById('btnDetect').addEventListener('click', runDetection);
   document.getElementById('btnHide').addEventListener('click', runHiding);

@@ -1,19 +1,20 @@
 /* style.css */
 :root {
-  --bg: #07080d;
-  --s1: #0d0e18;
-  --s2: #13141f;
-  --s3: #1a1b28;
-  --b1: #22243a;
-  --b2: #2e3050;
-  --b3: #404368;
-  --tx: #e2e4f0;
-  --tx2: #8890b8;
-  --tx3: #4a4f72;
+  --bg: #f4f7fb;
+  --s1: #ffffff;
+  --s2: #f8fafd;
+  --s3: #eef3fb;
+  --b1: #d8e2f0;
+  --b2: #c1d0e4;
+  --b3: #97abc7;
+  --tx: #172132;
+  --tx2: #3f5170;
+  --tx3: #6e7f9b;
   --ac: #818cf8;
   --ac2: #f472b6;
   --ac3: #34d399;
   --ac4: #fb923c;
+  --overlay: rgba(255, 255, 255, .92);
   --mono: 'IBM Plex Mono', 'Fira Mono', monospace;
   --r: 8px;
   --r2: 12px;
@@ -29,6 +30,20 @@
   --c7: #ec4899;
   --c8: #84cc16;
   --c9: #8b5cf6;
+}
+
+body[data-theme='dark'] {
+  --bg: #07080d;
+  --s1: #0d0e18;
+  --s2: #13141f;
+  --s3: #1a1b28;
+  --b1: #22243a;
+  --b2: #2e3050;
+  --b3: #404368;
+  --tx: #e2e4f0;
+  --tx2: #8890b8;
+  --tx3: #4a4f72;
+  --overlay: rgba(7, 8, 13, .9);
 }
 
 *{ box-sizing:border-box; margin:0; padding:0; }
@@ -61,6 +76,22 @@ header{
 .status-dot.loading{ background:var(--ac4); animation:pulse 1s infinite; }
 .status-text{ font-size:11px; color:var(--tx2); font-family:var(--mono); }
 @keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.theme-toggle{
+  font-size:11px;
+  font-family:var(--mono);
+  padding:4px 10px;
+  border:1px solid var(--b2);
+  border-radius:6px;
+  background:var(--s2);
+  color:var(--tx2);
+  cursor:pointer;
+  transition:all .2s;
+}
+.theme-toggle:hover{
+  color:var(--tx);
+  border-color:var(--b3);
+}
 
 .mode-toggle{ display:flex; gap:1px; background:var(--s2); border:1px solid var(--b1); border-radius:6px; padding:2px; }
 .mode-btn{ font-size:11px; font-family:var(--mono); padding:4px 10px; border-radius:4px; cursor:pointer; color:var(--tx3); background:none; border:none; transition:all .2s; }
@@ -207,7 +238,7 @@ header{
 
 .graph-pane svg{ width:100%; height:100%; }
 
-.graph-legend{ position:absolute; bottom:10px; left:10px; background:rgba(7,8,13,.9); border:1px solid var(--b1); border-radius:var(--r); padding:9px 11px; z-index:10; backdrop-filter:blur(6px); }
+.graph-legend{ position:absolute; bottom:10px; left:10px; background:var(--overlay); border:1px solid var(--b1); border-radius:var(--r); padding:9px 11px; z-index:10; backdrop-filter:blur(6px); }
 .legend-title{ font-family:var(--mono); font-size:9px; color:var(--tx3); letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px; }
 .legend-item{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--tx2); font-family:var(--mono); margin-bottom:4px; }
 .legend-dot{ width:8px; height:8px; border-radius:2px; flex-shrink:0; }
