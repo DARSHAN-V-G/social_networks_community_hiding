@@ -59,6 +59,20 @@
         <span>Drop file or click</span>
         <span class="upload-hint">.txt · .csv · .json</span>
       </div>
+
+      <div class="sb-sub" style="margin-top:10px;">Quick Graph Edit</div>
+      <div class="edit-grid">
+        <div class="edit-row">
+          <input class="edit-input" id="addNodeId" type="number" min="0" step="1" placeholder="Node ID (blank = auto)">
+          <button class="btn edit-btn" id="btnAddNode" disabled>Add Node</button>
+        </div>
+        <div class="edit-row">
+          <input class="edit-input" id="edgeSource" type="number" min="0" step="1" placeholder="From node">
+          <input class="edit-input" id="edgeTarget" type="number" min="0" step="1" placeholder="To node">
+          <button class="btn edit-btn" id="btnAddEdge" disabled>Add Edge</button>
+        </div>
+        <div class="edit-hint" id="editHint">Load a dataset to start editing</div>
+      </div>
     </div>
 
     <!-- Step 2: Detection -->
@@ -79,7 +93,8 @@
           <span class="algo-desc">label-based</span>
         </label>
       </div>
-      <button class="btn btn-primary" id="btnDetect" disabled>▶ Detect Communities</button>
+      <button class="btn btn-primary" id="btnDetect" disabled>▶ Detect Communities on BEFORE</button>
+      <button class="btn" id="btnDetectAfter" disabled style="margin-top:6px;">▶ Detect Communities on AFTER</button>
     </div>
 
     <!-- Step 3: Target selection -->
@@ -114,6 +129,7 @@
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
         <button class="btn btn-hide" id="btnHide" disabled>⚡ Run Hiding Algorithm</button>
+        <button class="btn" id="btnUseAfterGraph" disabled>Use AFTER as New Graph</button>
         <button class="btn" id="btnReset">↺ Reset</button>
       </div>
     </div>

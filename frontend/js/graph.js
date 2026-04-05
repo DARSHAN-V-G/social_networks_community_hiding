@@ -7,8 +7,13 @@ const GRAPH = {
   ],
 
   sims: {}, // simulation references keyed by svg id
+  onNodeClick: null,
 
-  draw(svgId, nodes, links, nodeComm, targets = [], highlightedEdges = []) {
+  setNodeClickHandler(handler) {
+    this.onNodeClick = handler;
+  },
+
+  draw(svgId, nodes, links, nodeComm, targets = [], highlightedEdges = [], options = {}) {
     const svg = document.getElementById(svgId);
     svg.innerHTML = '';
 
@@ -46,11 +51,13 @@ const GRAPH = {
         .links(linksCopy))
       .force('charge', d3.forceManyBody().strength(-100))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collide', d3.forceCollide(15));
+      .force('collide', d3.forceCollide(18));
 
     this.sims[svgId] = sim;
 
     const g = d3.select(`#${svgId}`);
+    const outlineOnlyTargets = !!options.outlineOnlyTargets;
+    const defaultTargetOutlineColor = options.targetOutlineColor || '#6b7280';
 
     // Draw links
     const link = g.selectAll('line')
@@ -77,20 +84,26 @@ const GRAPH = {
       .data(nodesCopy, d => d.id)
       .join('circle')
       .attr('r', d => {
+        const digits = String(d.id).length;
+        const baseRadius = Math.max(8, 5 + digits * 2);
         const targetNode = targets.find(t => t.members.includes(d.id));
-        return targetNode ? 8 : 5;
+        return targetNode ? baseRadius + 2 : baseRadius;
       })
       .attr('fill', d => {
         const targetNode = targets.find(t => t.members.includes(d.id));
-        if (targetNode) return targetNode.color;
+        if (targetNode && !outlineOnlyTargets) return targetNode.color || defaultTargetOutlineColor;
         const community = nodeComm[d.id] !== undefined ? nodeComm[d.id] : 0;
         return this.PALETTE[community % this.PALETTE.length];
       })
       .attr('stroke', d => {
         const targetNode = targets.find(t => t.members.includes(d.id));
-        return targetNode ? '#fff' : 'none';
+        return targetNode ? (outlineOnlyTargets ? (targetNode.color || defaultTargetOutlineColor) : '#fff') : 'none';
       })
-      .attr('stroke-width', 2)
+      .attr('stroke-width', d => {
+        const targetNode = targets.find(t => t.members.includes(d.id));
+        if (!targetNode) return 2;
+        return outlineOnlyTargets ? 3 : 2;
+      })
       .attr('opacity', 0.9)
       .call(d3.drag()
         .on('start', (event, d) => {
@@ -108,6 +121,22 @@ const GRAPH = {
           d.fy = null;
         }));
 
+    const labels = g.selectAll('text.node-label')
+      .data(nodesCopy, d => d.id)
+      .join('text')
+      .attr('class', 'node-label')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-family', 'var(--mono)')
+      .attr('font-size', d => String(d.id).length >= 3 ? 8 : 9)
+      .attr('font-weight', 600)
+      .attr('fill', '#ffffff')
+      .attr('stroke', 'rgba(0,0,0,0.6)')
+      .attr('stroke-width', 1.6)
+      .attr('paint-order', 'stroke')
+      .style('pointer-events', 'none')
+      .text(d => d.id);
+
     // Add hover tooltips
     node.on('mouseenter', (event, d) => {
       const tooltip = document.getElementById('tooltip');
@@ -121,6 +150,11 @@ const GRAPH = {
       const tooltip = document.getElementById('tooltip');
       tooltip.style.left = (event.pageX + 10) + 'px';
       tooltip.style.top = (event.pageY + 10) + 'px';
+    }).on('click', (event, d) => {
+      if (event.defaultPrevented) return;
+      if (typeof this.onNodeClick === 'function') {
+        this.onNodeClick(d.id, svgId);
+      }
     });
 
     // Update on simulation tick
@@ -132,8 +166,12 @@ const GRAPH = {
         .attr('y2', d => d.target.y);
 
       node
-        .attr('cx', d => d.x = Math.max(5, Math.min(width - 5, d.x)))
-        .attr('cy', d => d.y = Math.max(5, Math.min(height - 5, d.y)));
+        .attr('cx', d => d.x = Math.max(12, Math.min(width - 12, d.x)))
+        .attr('cy', d => d.y = Math.max(12, Math.min(height - 12, d.y)));
+
+      labels
+        .attr('x', d => d.x)
+        .attr('y', d => d.y);
     });
   },
 

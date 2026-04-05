@@ -146,6 +146,27 @@ header{
 .upload-zone.dragging{ border-color:var(--ac3); background:rgba(52,211,153,.05); }
 .upload-hint{ font-size:9px; font-family:var(--mono); }
 
+/* Quick graph edit */
+.edit-grid{ display:flex; flex-direction:column; gap:6px; }
+.edit-row{ display:grid; gap:5px; }
+.edit-row:first-child{ grid-template-columns:1fr auto; }
+.edit-row:nth-child(2){ grid-template-columns:1fr 1fr auto; }
+.edit-input{
+  width:100%;
+  border:1px solid var(--b1);
+  background:var(--s2);
+  color:var(--tx);
+  border-radius:var(--r);
+  font-size:11px;
+  font-family:var(--mono);
+  padding:7px 8px;
+  outline:none;
+}
+.edit-input:focus{ border-color:var(--ac); }
+.edit-input::placeholder{ color:var(--tx3); }
+.edit-btn{ width:auto; min-width:84px; padding:7px 10px; }
+.edit-hint{ font-size:10px; color:var(--tx3); font-family:var(--mono); }
+
 /* Algo selection */
 .algo-row{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:8px; }
 .algo-opt{

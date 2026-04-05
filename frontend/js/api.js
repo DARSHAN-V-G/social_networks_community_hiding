@@ -46,12 +46,16 @@ const API = {
   },
 
   async detect(algorithm) {
+    return this.detectOnGraph(APP.graph.nodes, APP.graph.links, algorithm);
+  },
+
+  async detectOnGraph(nodes, links, algorithm) {
     const res = await fetch(`${this.BASE_URL}/api/detect`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        nodes: APP.graph.nodes,
-        links: APP.graph.links,
+        nodes,
+        links,
         algorithm: algorithm || 'louvain'
       })
     });
@@ -184,17 +188,52 @@ const API = {
   },
 
   _formatGraphResponse(data) {
-    const nodes = data.graph.nodes || [];
-    const links = data.graph.links || [];
-    const nodeMap = new Map(nodes.map(n => [n.id, n]));
-    
+    const rawNodes = data.graph.nodes || [];
+    const rawLinks = data.graph.links || [];
+
+    const originalNodeMap = new Map(rawNodes.map(n => [Number(n.id), n]));
+    const idSet = new Set(rawNodes.map(n => Number(n.id)));
+
+    rawLinks.forEach(l => {
+      const s = Number(typeof l.source === 'object' ? l.source.id : l.source);
+      const t = Number(typeof l.target === 'object' ? l.target.id : l.target);
+      if (Number.isFinite(s)) idSet.add(s);
+      if (Number.isFinite(t)) idSet.add(t);
+    });
+
+    const sortedIds = Array.from(idSet).sort((a, b) => a - b);
+    const remap = new Map(sortedIds.map((id, idx) => [id, idx + 1]));
+
+    const nodes = sortedIds.map(oldId => {
+      const oldNode = originalNodeMap.get(oldId) || {};
+      return {
+        id: remap.get(oldId),
+        x: oldNode.x,
+        y: oldNode.y
+      };
+    });
+
+    const seenEdges = new Set();
+    const links = [];
+    rawLinks.forEach(l => {
+      const sOld = Number(typeof l.source === 'object' ? l.source.id : l.source);
+      const tOld = Number(typeof l.target === 'object' ? l.target.id : l.target);
+      const s = remap.get(sOld);
+      const t = remap.get(tOld);
+      if (!s || !t || s === t) return;
+
+      const k1 = Math.min(s, t);
+      const k2 = Math.max(s, t);
+      const key = `${k1}-${k2}`;
+      if (seenEdges.has(key)) return;
+      seenEdges.add(key);
+      links.push({ source: s, target: t });
+    });
+
     // Ensure all nodes have positions for visualization
-    let maxX = 0, maxY = 0;
     nodes.forEach(n => {
       if (!n.x) n.x = Math.random() * 500;
       if (!n.y) n.y = Math.random() * 500;
-      maxX = Math.max(maxX, n.x);
-      maxY = Math.max(maxY, n.y);
     });
 
     return {

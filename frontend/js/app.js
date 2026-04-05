@@ -10,13 +10,15 @@ const APP = {
   algo: 'louvain'
 };
 
-const TARGET_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7'];
+const TARGET_COLORS = ['#6b7280', '#7c8798', '#546173', '#97a3b5', '#4b5563'];
 
 // ── INIT ─────────────────────────────────────────────────────
 async function init() {
   initTheme();
   loadPreloadedList();
   bindEvents();
+  GRAPH.setNodeClickHandler(handleGraphNodeClick);
+  syncEditorState();
   setStep(1);
 }
 
@@ -131,6 +133,8 @@ function onGraphLoaded(graph) {
 
   document.getElementById('btnDetect').disabled = false;
   document.getElementById('btnHide').disabled = true;
+  document.getElementById('btnDetectAfter').disabled = true;
+  document.getElementById('btnUseAfterGraph').disabled = true;
 
   updateStats(graph.nodeCount, graph.edgeCount, '—', '—');
   document.getElementById('commList').innerHTML = '<div style="color:var(--tx3);font-size:10px;font-family:var(--mono)">Detect communities first</div>';
@@ -140,7 +144,176 @@ function onGraphLoaded(graph) {
   GRAPH.draw('svgBefore', graph.nodes, graph.links, buildFlatComm(graph.nodes), []);
   GRAPH.draw('svgAfter', graph.nodes, graph.links, buildFlatComm(graph.nodes), []);
   resetAfterPane();
+  syncEditorState();
   setStep(2);
+}
+
+function hasNode(nodeId) {
+  return APP.graph && APP.graph.nodes.some(n => +n.id === +nodeId);
+}
+
+function hasEdge(u, v) {
+  return APP.graph && APP.graph.links.some(l => {
+    const s = typeof l.source === 'object' ? l.source.id : l.source;
+    const t = typeof l.target === 'object' ? l.target.id : l.target;
+    return (+s === +u && +t === +v) || (+s === +v && +t === +u);
+  });
+}
+
+function nextNodeId() {
+  if (!APP.graph || !APP.graph.nodes.length) return 1;
+  return Math.max(...APP.graph.nodes.map(n => +n.id)) + 1;
+}
+
+function handleGraphNodeClick(nodeId) {
+  if (!APP.graph) return;
+
+  const srcEl = document.getElementById('edgeSource');
+  const dstEl = document.getElementById('edgeTarget');
+
+  // First click sets source. Next click sets target.
+  if (!srcEl.value || (srcEl.value && dstEl.value)) {
+    srcEl.value = String(nodeId);
+    if (dstEl.value) dstEl.value = '';
+    showToast(`Start node set to ${nodeId}. Click another node for end.`);
+    return;
+  }
+
+  if (+srcEl.value === +nodeId) {
+    showToast('Pick a different end node', 'error');
+    return;
+  }
+
+  dstEl.value = String(nodeId);
+  showToast(`End node set to ${nodeId}. Press Enter or click Add Edge.`, 'success');
+}
+
+function clearDerivedStateAfterEdit() {
+  APP.detection = null;
+  APP.targets = [];
+  APP.hidingResult = null;
+
+  document.getElementById('btnHide').disabled = true;
+  document.getElementById('btnDetectAfter').disabled = true;
+  document.getElementById('btnUseAfterGraph').disabled = true;
+  document.getElementById('commList').innerHTML = '<div style="color:var(--tx3);font-size:10px;font-family:var(--mono)">Graph edited. Run detection again</div>';
+  document.getElementById('selectionInfo').textContent = 'Graph changed. Detect communities again';
+
+  document.getElementById('chipsB').innerHTML = '';
+  document.getElementById('chipsA').innerHTML = '';
+  document.getElementById('beforeAlgo').textContent = '';
+  document.getElementById('afterAlgo').textContent = '';
+  document.getElementById('legendBefore').style.display = 'none';
+
+  resetAfterPane();
+  STEPS.init([], [], [], []);
+
+  // Clear analysis cards and logs when graph structure changes.
+  document.getElementById('hBefore').textContent = '—';
+  document.getElementById('hAfter').textContent = '—';
+  document.getElementById('hGain').textContent = '—';
+  document.getElementById('hPerts').textContent = '—';
+  document.getElementById('perCommScores').innerHTML = '';
+  document.getElementById('pertLog').innerHTML = '';
+
+  GRAPH.draw('svgBefore', APP.graph.nodes, APP.graph.links, buildFlatComm(APP.graph.nodes), []);
+  GRAPH.draw('svgAfter', APP.graph.nodes, APP.graph.links, buildFlatComm(APP.graph.nodes), []);
+  updateStats(APP.graph.nodeCount, APP.graph.edgeCount, '—', '—');
+  setStep(2);
+}
+
+function syncEditorState() {
+  const canEdit = !!APP.graph;
+  document.getElementById('btnAddNode').disabled = !canEdit;
+  document.getElementById('btnAddEdge').disabled = !canEdit;
+  document.getElementById('editHint').textContent = canEdit
+    ? `Tip: click nodes in graph to fill edge inputs. Next auto node ID: ${nextNodeId()}`
+    : 'Load a dataset to start editing';
+}
+
+function addNode() {
+  if (!APP.graph) {
+    showToast('Load a dataset first', 'error');
+    return;
+  }
+
+  const nodeInput = document.getElementById('addNodeId');
+  const raw = nodeInput.value.trim();
+  const nodeId = raw === '' ? nextNodeId() : Number(raw);
+
+  if (!Number.isInteger(nodeId) || nodeId < 0) {
+    showToast('Node ID must be a non-negative integer', 'error');
+    return;
+  }
+  if (hasNode(nodeId)) {
+    showToast(`Node ${nodeId} already exists`, 'error');
+    return;
+  }
+
+  APP.graph.nodes.push({ id: nodeId });
+  APP.graph.nodeCount = APP.graph.nodes.length;
+  nodeInput.value = '';
+
+  clearDerivedStateAfterEdit();
+  syncEditorState();
+  showToast(`Added node ${nodeId}`, 'success');
+}
+
+function addEdge() {
+  if (!APP.graph) {
+    showToast('Load a dataset first', 'error');
+    return;
+  }
+
+  const srcEl = document.getElementById('edgeSource');
+  const dstEl = document.getElementById('edgeTarget');
+  const u = Number(srcEl.value.trim());
+  const v = Number(dstEl.value.trim());
+
+  if (!Number.isInteger(u) || !Number.isInteger(v) || u < 0 || v < 0) {
+    showToast('Edge endpoints must be non-negative integers', 'error');
+    return;
+  }
+  if (u === v) {
+    showToast('Self-loops are not allowed', 'error');
+    return;
+  }
+  if (!hasNode(u) || !hasNode(v)) {
+    showToast('Both nodes must exist before adding an edge', 'error');
+    return;
+  }
+  if (hasEdge(u, v)) {
+    showToast(`Edge ${u}-${v} already exists`, 'error');
+    return;
+  }
+
+  APP.graph.links.push({ source: u, target: v });
+  APP.graph.edgeCount = APP.graph.links.length;
+  srcEl.value = '';
+  dstEl.value = '';
+
+  clearDerivedStateAfterEdit();
+  syncEditorState();
+  showToast(`Added edge ${u} ↔ ${v}`, 'success');
+}
+
+function useAfterGraphAsCurrent() {
+  if (!APP.hidingResult || !APP.graph) {
+    showToast('Run hiding first to generate an AFTER graph', 'error');
+    return;
+  }
+
+  const normalizedLinks = (APP.hidingResult.finalLinks || []).map(l => ({
+    source: typeof l.source === 'object' ? l.source.id : l.source,
+    target: typeof l.target === 'object' ? l.target.id : l.target
+  }));
+
+  APP.graph.links = normalizedLinks;
+  APP.graph.edgeCount = normalizedLinks.length;
+
+  clearDerivedStateAfterEdit();
+  syncEditorState();
+  showToast('AFTER graph is now the current graph. Detect communities and hide again.', 'success');
 }
 
 // ── DETECTION ─────────────────────────────────────────────────
@@ -166,6 +339,31 @@ async function runDetection() {
       APP.mode === 'multi' ? 'Select up to 5 communities' : 'Select 1 community to hide';
     setStep(3);
     showToast(`Found ${data.count} communities using ${APP.algo === 'louvain' ? 'Louvain' : 'Label Propagation'}`, 'success');
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function runDetectionAfter() {
+  if (!APP.graph || !APP.hidingResult) {
+    showToast('Run hiding first to detect communities on AFTER graph', 'error');
+    return;
+  }
+
+  setLoading(true, 'Running community detection on AFTER graph...');
+  try {
+    const data = await API.detectOnGraph(APP.graph.nodes, APP.hidingResult.finalLinks, APP.algo);
+    const tgtObjs = APP.targets.map(t => ({ ...t, members: t.members }));
+
+    GRAPH.draw('svgAfter', APP.graph.nodes, APP.hidingResult.finalLinks, data.nodeComm, tgtObjs);
+    GRAPH.buildLegend('legendAfter', 'legendAfterItems', data.nodeComm, APP.targets.map(t => t.commId));
+    document.getElementById('emptyAfter').style.display = 'none';
+    document.getElementById('legendAfter').style.display = 'block';
+    document.getElementById('afterAlgo').textContent = `${APP.algo === 'louvain' ? 'Louvain' : 'LPA'} (re-detected)`;
+
+    showToast(`AFTER graph: found ${data.count} communities`, 'success');
   } catch (e) {
     showToast(e.message, 'error');
   } finally {
@@ -222,7 +420,15 @@ function toggleTarget(comm, colorIdx, color, el) {
 
   // redraw before graph with target highlights
   const tgtObjs = APP.targets.map((t, i) => ({ ...t, members: t.members }));
-  GRAPH.draw('svgBefore', APP.graph.nodes, APP.graph.links, APP.detection.nodeComm, tgtObjs);
+  GRAPH.draw(
+    'svgBefore',
+    APP.graph.nodes,
+    APP.graph.links,
+    APP.detection.nodeComm,
+    tgtObjs,
+    [],
+    { outlineOnlyTargets: true, targetOutlineColor: '#6b7280' }
+  );
   GRAPH.buildLegend('legendBefore', 'legendBeforeItems', APP.detection.nodeComm, tgtIds);
   GRAPH.buildTargetChips('chipsB', APP.targets);
 
@@ -261,6 +467,8 @@ async function runHiding() {
 
     document.getElementById('emptyAfter').style.display = 'none';
     document.getElementById('legendAfter').style.display = 'block';
+    document.getElementById('btnDetectAfter').disabled = false;
+    document.getElementById('btnUseAfterGraph').disabled = false;
 
     // populate analysis tab
     populateAnalysis(data);
@@ -384,9 +592,22 @@ function bindEvents() {
   bindUpload();
 
   document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+  document.getElementById('btnAddNode').addEventListener('click', addNode);
+  document.getElementById('btnAddEdge').addEventListener('click', addEdge);
+  document.getElementById('addNodeId').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addNode();
+  });
+  document.getElementById('edgeSource').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addEdge();
+  });
+  document.getElementById('edgeTarget').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addEdge();
+  });
 
   document.getElementById('btnDetect').addEventListener('click', runDetection);
+  document.getElementById('btnDetectAfter').addEventListener('click', runDetectionAfter);
   document.getElementById('btnHide').addEventListener('click', runHiding);
+  document.getElementById('btnUseAfterGraph').addEventListener('click', useAfterGraphAsCurrent);
 
   document.getElementById('btnReset').addEventListener('click', () => {
     GRAPH.stopAll();
@@ -399,9 +620,12 @@ function bindEvents() {
     document.getElementById('chipsA').innerHTML = '';
     document.getElementById('btnDetect').disabled = true;
     document.getElementById('btnHide').disabled = true;
+    document.getElementById('btnDetectAfter').disabled = true;
+    document.getElementById('btnUseAfterGraph').disabled = true;
     updateStats('—', '—', '—', '—');
     setStep(1);
     STEPS.init([], [], [], []);
+    syncEditorState();
     loadPreloadedList();
   });
 
@@ -427,7 +651,15 @@ function bindEvents() {
       document.getElementById('btnHide').disabled = true;
       document.getElementById('chipsB').innerHTML = '';
       if (APP.detection) {
-        GRAPH.draw('svgBefore', APP.graph.nodes, APP.graph.links, APP.detection.nodeComm, []);
+        GRAPH.draw(
+          'svgBefore',
+          APP.graph.nodes,
+          APP.graph.links,
+          APP.detection.nodeComm,
+          [],
+          [],
+          { outlineOnlyTargets: true, targetOutlineColor: '#6b7280' }
+        );
       }
     });
   });
