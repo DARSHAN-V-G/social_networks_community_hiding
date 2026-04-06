@@ -11,6 +11,8 @@ function runMHs(nodes, rawLinks, targets, budget, lambda=0.5, detectionAlgo='lou
   const steps = [];
 
   const initAdj = linksToAdj(allIds, links);
+  const initDet = detectCommunities(nodes, links, detectionAlgo);
+  const hScoresBefore = Object.fromEntries(targets.map(t => [t.commId, +computeHScore(initDet.assignment, t.members, initAdj).toFixed(4)]));
   const initSigmas = {};
   targets.forEach((t,i)=>initSigmas[t.commId]=+computeSafeness(initAdj,tSets[i]).toFixed(4));
   const initMean = +(Object.values(initSigmas).reduce((a,b)=>a+b,0)/k).toFixed(4);
@@ -27,6 +29,9 @@ function runMHs(nodes, rawLinks, targets, budget, lambda=0.5, detectionAlgo='lou
     const adj = linksToAdj(allIds, links);
     const candidates = [];
 
+    // Mean σ across ALL k communities BEFORE any change this step
+    const meanSigBefore = tSets.reduce((sum, cs) => sum + computeSafeness(adj, cs), 0) / k;
+
     // inter-C ADD for each target
     for (let ti=0; ti<k; ti++) {
       const comm=tSets[ti];
@@ -34,14 +39,20 @@ function runMHs(nodes, rawLinks, targets, budget, lambda=0.5, detectionAlgo='lou
       for (const u of comm){ const d=adj[u].size; if(!d) continue; const r=[...adj[u]].filter(v=>!comm.has(v)).length/d; if(r<minR){minR=r;np=u;} }
       if (np===null) continue;
       const ext=allIds.filter(v=>!comm.has(v)&&!adj[np].has(v)&&v!==np);
-      for (const nt of ext.slice(0,15)) {
-        const d=adj[np].size;
-        const inter=[...adj[np]].filter(v=>!comm.has(v)).length;
-        const dSig = d>0 ? 0.5*(d-inter)/(d*(d+1)) : 0;
-        const meanGain = dSig/k;
+      for (const nt of ext) {  // all valid external nodes — no artificial cap
+        // Temporarily add the edge to adj (O(1) Set mutation)
+        adj[np].add(nt);
+        if (adj[nt]) adj[nt].add(np);
+        // Mean σ across ALL k communities AFTER adding this edge
+        const meanSigAfter = tSets.reduce((sum, cs) => sum + computeSafeness(adj, cs), 0) / k;
+        // Undo
+        adj[np].delete(nt);
+        if (adj[nt]) adj[nt].delete(np);
+
+        const meanGain = meanSigAfter - meanSigBefore;
         const isInterTarget = tAll.has(nt)&&!comm.has(nt);
         const penalty = isInterTarget ? lambda/Math.max(1,k-1) : 0;
-        const deltaP = meanGain-penalty;
+        const deltaP = meanGain - penalty;
         candidates.push({ type:'ADD', u:np, v:nt, ti, delta_phi:+deltaP.toFixed(6), mean_gain:+meanGain.toFixed(6), penalty:+penalty.toFixed(6), valid:true,
           reason:`inter-C ADD C${targets[ti].commId}: (${np}→${nt})${isInterTarget?' [PENALISED]':''}` });
       }
@@ -56,10 +67,16 @@ function runMHs(nodes, rawLinks, targets, budget, lambda=0.5, detectionAlgo='lou
           candidates.push({ type:'DEL', u:lk.source, v:lk.target, ti, delta_phi:0, mean_gain:0, penalty:0, valid:false,
             reason:`intra-C DEL C${targets[ti].commId}: (${lk.source}–${lk.target}) SKIP bridge` }); continue;
         }
-        const tl=links.filter(l=>!((l.source===lk.source&&l.target===lk.target)||(l.source===lk.target&&l.target===lk.source)));
-        const ta=linksToAdj(allIds,tl);
-        const dSig=computeSafeness(ta,comm)-computeSafeness(adj,comm);
-        const mg=dSig/k;
+        // Temporarily remove the edge from adj (O(1) Set mutation)
+        adj[lk.source].delete(lk.target);
+        adj[lk.target].delete(lk.source);
+        // Mean σ across ALL k communities AFTER removing this edge
+        const meanSigAfter = tSets.reduce((sum, cs) => sum + computeSafeness(adj, cs), 0) / k;
+        // Undo
+        adj[lk.source].add(lk.target);
+        adj[lk.target].add(lk.source);
+
+        const mg = meanSigAfter - meanSigBefore;
         candidates.push({ type:'DEL', u:lk.source, v:lk.target, ti, delta_phi:+mg.toFixed(6), mean_gain:+mg.toFixed(6), penalty:0, valid:true,
           reason:`intra-C DEL C${targets[ti].commId}: (${lk.source}–${lk.target}) ΔΦ=${mg.toFixed(4)}` });
       }
@@ -103,13 +120,13 @@ function runMHs(nodes, rawLinks, targets, budget, lambda=0.5, detectionAlgo='lou
   const finalSigmas=Object.fromEntries(targets.map((t,i)=>[t.commId,+computeSafeness(finalAdj,tSets[i]).toFixed(4)]));
   const finalDet=detectCommunities(nodes,links,detectionAlgo);
   const allMembers=targets.flatMap(t=>t.members);
-  const hScores=Object.fromEntries(targets.map(t=>[t.commId,+computeHScore(finalDet.assignment,t.members).toFixed(4)]));
-  const combinedH=+computeHScore(finalDet.assignment,allMembers).toFixed(4);
+  const hScores=Object.fromEntries(targets.map(t=>[t.commId,+computeHScore(finalDet.assignment,t.members,finalAdj).toFixed(4)]));
+  const combinedH=+computeHScore(finalDet.assignment,allMembers,finalAdj).toFixed(4);
 
   return { algorithm:'MHs-Joint', target_communities:targets.map(t=>t.commId), budget, lambda, steps,
     summary:{ sigma_before:initSigmas, sigma_after:finalSigmas, mean_sigma_before:initMean,
       mean_sigma_after:+(Object.values(finalSigmas).reduce((a,b)=>a+b,0)/k).toFixed(4),
-      h_scores:hScores, combined_h_score:combinedH,
+      h_scores_before:hScoresBefore, h_scores:hScores, combined_h_score:combinedH,
       total_perturbations:steps.filter(s=>s.applied).length, final_links:links, final_communities:finalDet } };
 }
 

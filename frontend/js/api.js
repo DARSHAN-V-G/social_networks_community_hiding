@@ -154,9 +154,12 @@ const API = {
 
     // Extract H-scores from summary
     const hScoreCommunities = summary.h_scores || {};
-    let hScoreBefore = Object.values(hScoreCommunities)[0] || 0;
-    let hScoreAfter = summary.combined_h_score || hScoreBefore;
-    
+    const hScoreCommunitiesBefore = summary.h_scores_before || {};
+    // hScoreBefore = mean of per-community before scores
+    const hBeforeVals = Object.values(hScoreCommunitiesBefore);
+    let hScoreBefore = hBeforeVals.length ? +(hBeforeVals.reduce((a,b)=>a+b,0)/hBeforeVals.length).toFixed(4) : 0;
+    let hScoreAfter = typeof summary.combined_h_score === 'number' ? summary.combined_h_score : (Object.values(hScoreCommunities)[0] || 0);
+
     // Handle case where h_scores might be single value
     if (typeof hScoreBefore !== 'number') hScoreBefore = 0;
     if (typeof hScoreAfter !== 'number') hScoreAfter = 0;
@@ -164,9 +167,9 @@ const API = {
     // Build per-target scores
     const perTargetScores = APP.targets.map((target, idx) => ({
       commId: target.commId,
-      sigmaBefore: (summary.sigma_before && summary.sigma_before[target.commId]) || 0.5,
-      sigmaAfter: (summary.sigma_after && summary.sigma_after[target.commId]) || 0.5,
-      hBefore: (summary.h_scores && summary.h_scores[target.commId]) || 0,
+      sigmaBefore: (summary.sigma_before && summary.sigma_before[target.commId]) || 0,
+      sigmaAfter: (summary.sigma_after && summary.sigma_after[target.commId]) || 0,
+      hBefore: (summary.h_scores_before && summary.h_scores_before[target.commId]) || 0,
       hAfter: (summary.h_scores && summary.h_scores[target.commId]) || 0
     }));
 
@@ -180,7 +183,7 @@ const API = {
       summary: {
         hScoreBefore: hScoreBefore,
         hScoreAfter: hScoreAfter,
-        hScoreGain: Math.max(0, hScoreAfter - hScoreBefore),
+        hScoreGain: +((hScoreAfter - hScoreBefore).toFixed(4)),
         totalPerturbations: summary.total_perturbations || steps.filter(s => s.applied).length,
         perTargetScores: perTargetScores
       }

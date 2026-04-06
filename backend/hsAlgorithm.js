@@ -9,6 +9,8 @@ function runHs(nodes, rawLinks, targetCommId, targetMembers, budget, detectionAl
   const steps = [];
 
   const initAdj = linksToAdj(allIds, links);
+  const initDet = detectCommunities(nodes, links, detectionAlgo);
+  const hBefore = computeHScore(initDet.assignment, targetMembers, initAdj);
   const sigBefore = computeSafeness(initAdj, commSet);
 
   steps.push({ step:0, type:'init',
@@ -33,7 +35,7 @@ function runHs(nodes, rawLinks, targetCommId, targetMembers, budget, detectionAl
     }
     if (np!==null) {
       const ext = allIds.filter(v=>!commSet.has(v)&&!adj[np].has(v)&&v!==np);
-      for (const nt of ext.slice(0,20)) {
+      for (const nt of ext) {  // all valid external nodes — no artificial cap
         const d=adj[np].size;
         const inter=[...adj[np]].filter(v=>!commSet.has(v)).length;
         const gain = d>0 ? 0.5*(d-inter)/(d*(d+1)) : 0;
@@ -89,11 +91,12 @@ function runHs(nodes, rawLinks, targetCommId, targetMembers, budget, detectionAl
   const finalAdj=linksToAdj(allIds,links);
   const sigAfter=computeSafeness(finalAdj,commSet);
   const finalDet=detectCommunities(nodes,links,detectionAlgo);
-  const hAfter=computeHScore(finalDet.assignment,targetMembers);
+  const hAfter=computeHScore(finalDet.assignment,targetMembers,finalAdj);
 
   return { algorithm:'Hs', target_communities:[targetCommId], budget, steps,
     summary:{ sigma_before:{[targetCommId]:+sigBefore.toFixed(4)}, sigma_after:{[targetCommId]:+sigAfter.toFixed(4)},
       mean_sigma_before:+sigBefore.toFixed(4), mean_sigma_after:+sigAfter.toFixed(4),
+      h_scores_before:{[targetCommId]:+hBefore.toFixed(4)},
       h_scores:{[targetCommId]:+hAfter.toFixed(4)}, combined_h_score:+hAfter.toFixed(4),
       total_perturbations:steps.filter(s=>s.applied).length, final_links:links, final_communities:finalDet } };
 }

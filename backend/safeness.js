@@ -27,7 +27,7 @@ function computePsi(adj, commSet) {
   const n = commSet.size;
   if (n <= 1) return 0;
   const rho = computeRho(adj, commSet);
-  const rMin = 2*(n-1)*(n-1);
+  const rMin = 2*(n-1)*(n-1);  // paper Eq.2: ρ_min = 2(n−1)²
   let rMax = 0;
   for (let k=1;k<=n;k++){for(let i=1;i<=n-k;i++)rMax+=i;for(let j=0;j<k-1;j++)rMax+=j;}
   if (rMax===rMin) return 0;
@@ -58,17 +58,43 @@ function isBridge(adj, commSet, u, v) {
   return vis.size !== commSet.size;
 }
 
-function computeHScore(assignment, targetMembers) {
+function computeHScore(assignment, targetMembers, adj) {
   const target = new Set(targetMembers);
+  const n = target.size;
+
+  // Reachability factor: |S(C)| = number of connected components among target nodes
+  // Paper Eq.15: multiply by (1 - |S(C)|−1 / |C|−1)
+  let reachFactor = 1;
+  if (adj && n > 1) {
+    // BFS within target nodes only to count connected components
+    const visited = new Set();
+    let components = 0;
+    for (const start of target) {
+      if (visited.has(start)) continue;
+      components++;
+      const q = [start];
+      visited.add(start);
+      while (q.length) {
+        const cur = q.shift();
+        if (adj[cur]) {
+          for (const nb of adj[cur]) {
+            if (target.has(nb) && !visited.has(nb)) { visited.add(nb); q.push(nb); }
+          }
+        }
+      }
+    }
+    reachFactor = 1 - (components - 1) / (n - 1);  // paper Eq.15
+  }
+
   const cm = {};
-  for (const [n,c] of Object.entries(assignment)){if(!cm[c])cm[c]=[];cm[c].push(+n);}
+  for (const [nd,c] of Object.entries(assignment)){if(!cm[c])cm[c]=[];cm[c].push(+nd);}
   const comms = Object.values(cm);
   let maxR = 0;
-  for (const c of comms){ const r=c.filter(n=>target.has(n)).length/target.size; if(r>maxR)maxR=r; }
-  const rel = comms.filter(c=>c.some(n=>target.has(n)));
+  for (const c of comms){ const r=c.filter(nd=>target.has(nd)).length/target.size; if(r>maxR)maxR=r; }
+  const rel = comms.filter(c=>c.some(nd=>target.has(nd)));
   let meanP = 0;
-  if (rel.length){ for(const c of rel) meanP+=c.filter(n=>target.has(n)).length/c.length; meanP/=rel.length; }
-  return Math.max(0, Math.min(1, 0.5*(1-maxR)+0.5*(1-meanP)));
+  if (rel.length){ for(const c of rel) meanP+=c.filter(nd=>target.has(nd)).length/c.length; meanP/=rel.length; }
+  return Math.max(0, Math.min(1, reachFactor * (0.5*(1-maxR)+0.5*(1-meanP))));
 }
 
-module.exports = { linksToAdj, computePsi, computePhi, computeSafeness, isBridge, computeHScore };
+module.exports = { linksToAdj, computeRho, computePsi, computePhi, computeSafeness, isBridge, computeHScore };

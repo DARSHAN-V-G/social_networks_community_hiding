@@ -1,0 +1,377 @@
+================================================================================
+  MHs-Joint: Multi-Target Community Hiding via Safeness
+  Based on: "Community Hiding by Link Perturbation in Social Networks"
+            Chen et al., IEEE Transactions on Computational Social Systems, 2021
+================================================================================
+
+
+OVERVIEW
+--------
+MHs-Joint is an extension of the single-target Hs algorithm. Instead of hiding
+one community, it hides multiple target communities simultaneously by perturbing
+a shared budget of social links across all targets at once.
+
+The core idea: at each budget step, evaluate every possible link operation
+across ALL target communities and apply the one that gives the highest
+combined safeness gain, with a penalty if a link bridges two target communities.
+
+
+================================================================================
+SYMBOLS AND WHAT THEY MEAN
+================================================================================
+
+  G = (V, E)       The social network graph.
+                   V = set of all nodes (people/entities).
+                   E = set of all edges (relationships/links).
+
+  C_i              A single target community to be hidden.
+                   A set of nodes that are closely connected.
+
+  {C_1, ..., C_k}  The k target communities to hide (multi-target).
+
+  β (beta)         Budget — the maximum total number of link changes allowed
+                   (additions + deletions combined).
+
+  λ (lambda)       Penalty weight (0 to 1). Controls how much to penalize a
+                   link addition that connects one target community to another.
+                   Higher λ = stronger penalty for inter-target links.
+
+  sp(u, v)         Shortest path length between nodes u and v.
+
+  deg(u)           Degree of node u — number of links connected to u.
+
+  E(u, C)          Intra-community links of node u:
+                   links where BOTH endpoints are inside community C.
+
+  Ẽ(u, C)          Inter-community links of node u:
+                   links where one endpoint is u (inside C) and the other
+                   is OUTSIDE C.
+
+
+================================================================================
+THE THREE CORE FORMULAS
+================================================================================
+
+1. ρ(C)  — Dispersion of community C
+   ─────────────────────────────────
+   ρ(C) = Σ Σ sp(u, v)    for all pairs u, v inside C, u ≠ v
+
+   What it means:
+   Sum of shortest-path distances between every pair of nodes within C.
+   Higher ρ = nodes are farther apart = community is more dispersed = harder
+   to detect. A star-shaped community has the LOWEST ρ (nodes tightly packed
+   around a center). A line-shaped community has the HIGHEST ρ.
+
+
+2. ψ(C)  — Intra-Community Safeness  (normalized dispersion)
+   ──────────────────────────────────────────────────────────
+              ρ(C) - ρ_min
+   ψ(C) =  ─────────────────
+             ρ_max - ρ_min
+
+   Where:
+     ρ_min = 2(n-1)²       minimum dispersion (star topology, n = |C|)
+     ρ_max = Σ_k (Σ_i i + Σ_j j)  maximum dispersion (line topology)
+
+   Range: 0 to 1.
+     ψ = 1 → nodes arranged like a line → maximum internal spread → best hiding
+     ψ = 0 → nodes clustered like a star → minimum spread → easily detected
+
+   How to increase ψ:
+     Delete intra-C links (links inside the community) without disconnecting it.
+     This makes the internal structure more line-like and dispersed.
+
+
+3. φ(C)  — Inter-Community Safeness  (external connectivity ratio)
+   ────────────────────────────────────────────────────────────────
+             Σ_{u ∈ C}  |Ẽ(u, C)| / deg(u)
+   φ(C) =  ──────────────────────────────────
+
+   What it means:
+   For each node u inside the community, compute the fraction of u's links
+   that point OUTSIDE the community. Sum these fractions over all nodes in C.
+
+   Higher φ = more external connections = nodes are spread across other
+   communities = harder for detection algorithms to isolate C as a group.
+
+   How to increase φ:
+     Add inter-C links (new links between a node in C and a node outside C).
+     This pulls community members into other communities.
+
+
+================================================================================
+COMMUNITY SAFENESS: THE COMBINED METRIC
+================================================================================
+
+   σ(C) = ½ · ψ(C) + ½ · φ(C)
+
+   This is the overall measure of how well a community is hidden. It equally
+   weights the internal dispersion (ψ) and external spread (φ).
+
+   Goal of the algorithm: MAXIMIZE σ(C) for each target community C.
+
+   Safeness Gain (Φ):
+     Φ(C) = σ(C_after) - σ(C_before)
+
+   This is the gain from applying a single link operation. The algorithm
+   greedily picks the operation with the highest Φ at each step.
+
+
+================================================================================
+THE FOUR RULES (Theorems from the paper)
+================================================================================
+
+  Rule 1 (Theorem 1) — ADD inter-C link → always GOOD (Φ ≥ 0)
+    Adding a link between node u (inside C) and node v (outside C) always
+    increases or maintains σ. The best node to connect is the one with the
+    lowest current ratio of external links.
+    Gain formula:
+      Φ_add = ½ · (deg(u) - |Ẽ(u,C)|) / (deg(u) · (deg(u) + 1))
+
+  Rule 2 (Theorem 2) — ADD intra-C link → always BAD (Φ < 0)
+    Adding a link between two nodes both inside C always decreases σ.
+    → Never done by the algorithm.
+
+  Rule 3 (Theorem 3) — DELETE inter-C link → always BAD (Φ ≤ 0)
+    Removing a link between a node inside C and one outside C always
+    decreases or maintains σ.
+    → Never done by the algorithm.
+
+  Rule 4 (Theorem 4) — DELETE intra-C link → always GOOD (Φ > 0)
+    Removing a link between two nodes both inside C always increases σ,
+    PROVIDED the deletion does not disconnect C (i.e., the link is not a bridge).
+    → Only non-bridge intra-C links are deleted.
+
+
+================================================================================
+THE MHs-JOINT GREEDY ALGORITHM (Step by step)
+================================================================================
+
+INPUT:  Graph G, target communities {C_1, ..., C_k}, budget β, penalty λ
+OUTPUT: Updated graph G' where all k communities are harder to detect
+
+REPEAT until β = 0 or no improving operation exists:
+
+  STEP 1 — Generate ADD candidates (for each target community C_i):
+    a. Find node np = the node in C_i with the LOWEST ratio of external links
+                     (most "trapped" inside C_i, most needs external connections)
+    b. Find all external nodes nt that are NOT in C_i and NOT already linked to np
+    c. For each such nt, compute the addition gain:
+         gain_add = ½ · (deg(np) - |Ẽ(np, C_i)|) / (deg(np) · (deg(np) + 1))
+    d. Compute mean gain across k targets:
+         mean_gain = gain_add / k
+    e. If nt is inside another target community C_j (inter-target link), apply penalty:
+         penalty = λ / (k - 1)
+         net_gain = mean_gain - penalty
+       Otherwise: net_gain = mean_gain
+
+  STEP 2 — Generate DEL candidates (for each target community C_i):
+    a. Find all intra-C_i links (both endpoints inside C_i)
+    b. Skip any link that is a bridge (its deletion would disconnect C_i)
+    c. For remaining links, compute deletion gain:
+         gain_del = [σ(C_i after deletion) - σ(C_i before deletion)] / k
+
+  STEP 3 — Pick the best operation:
+    Sort all valid candidates (from all k communities) by net_gain descending.
+    Select the one with the highest net_gain.
+    If net_gain ≤ 0 for all candidates → STOP EARLY.
+
+  STEP 4 — Apply the operation:
+    ADD:  Add edge (np, nt) to G
+    DEL:  Remove the chosen intra-C link from G
+
+  STEP 5 — Decrement budget: β = β - 1
+
+
+================================================================================
+THE PENALTY MECHANISM (what makes MHs different from just running Hs k times)
+================================================================================
+
+When a link addition connects node np (in C_i) to node nt (in another target
+community C_j), it benefits C_i's hiding but creates a visible connection
+between two "secret" communities — which could expose both.
+
+The penalty λ / (k-1) is subtracted from the gain of such operations.
+
+  λ = 0   → No penalty. Inter-target links are freely allowed.
+  λ = 0.5 → Moderate penalty. Slight preference against inter-target links.
+  λ = 1   → Maximum penalty. Strongly avoids linking target communities together.
+
+This allows the algorithm to coordinate hiding across all targets jointly rather
+than independently — hence the name "MHs-Joint".
+
+
+================================================================================
+H-SCORE: MEASURING HIDING QUALITY (the evaluation metric)
+================================================================================
+
+After hiding, quality is measured by the H-score (deception score):
+
+  H(C, C̄) = reachability_factor × (½(1 - max_recall) + ½(1 - mean_precision))
+
+Where:
+  - C̄ = community partition found by detection algorithm on the modified graph
+  - reachability_factor = (1 - (|S(C)| - 1) / (|C| - 1))
+      |S(C)| = number of connected components among target nodes in G'
+      This penalizes if target nodes got disconnected from each other.
+      If community stays connected: |S(C)| = 1, factor = 1 (no penalty)
+
+  - max_recall = highest fraction of target members found in any single detected
+    community. If all target members end up in the same community, max_recall = 1
+    (→ bad, still detectable). If spread across many communities, max_recall ≈ 0.
+
+  - mean_precision = average fraction of target members in each community that
+    overlaps with C. Low precision = target members are diluted among outsiders.
+
+  H ranges from 0 to 1:
+    H = 1 → perfectly hidden (members spread, connected, diluted)
+    H = 0 → completely visible (members still form their own detected community)
+
+
+================================================================================
+COMPLEXITY
+================================================================================
+
+  Time complexity: O(β · k · (n + m))
+
+  Where:
+    β = budget (number of link changes)
+    k = number of target communities
+    n = number of nodes in the graph
+    m = number of edges in the graph
+
+  For each budget step:
+    - We scan all nodes and links across all k communities → O(k · (n + m))
+  This makes it linear in graph size per step.
+
+
+================================================================================
+SUMMARY IN ONE PARAGRAPH
+================================================================================
+
+MHs-Joint takes k communities you want to hide and a budget β of allowed link
+changes. At each step, it looks at every possible inter-C link addition (which
+always helps by pulling members outward) and every safe intra-C link deletion
+(which always helps by spreading members apart internally) across all k targets.
+It picks the single operation with the highest safeness gain, penalizing
+operations that connect two target communities together (controlled by λ). After
+β steps, the graph is modified so that community detection algorithms can no
+longer clearly identify any of the target communities — they appear as scattered
+nodes distributed among other communities in the network.
+
+================================================================================
+
+================================================================================
+  GAIN CALCULATION (Updated: Mean Safeness Across All Target Communities)
+================================================================================
+
+──────────────────────────────────────────────────────────────────────────────
+AVERAGE SAFENESS  (the objective metric for MHs-Joint)
+──────────────────────────────────────────────────────────────────────────────
+
+  Given k target communities {C₁, C₂, ..., Cₖ}, the average safeness is:
+
+                    1   k
+       σ̄(G)  =    ─── · Σ  σ(Cᵢ)
+                    k   i=1
+
+  Where:
+       σ(Cᵢ) = ½ · ψ(Cᵢ) + ½ · φ(Cᵢ)       (safeness of community i)
+       ψ(Cᵢ) = intra-community safeness       (internal dispersion, 0 to 1)
+       φ(Cᵢ) = inter-community safeness       (external connectivity ratio)
+       k      = total number of target communities
+
+
+──────────────────────────────────────────────────────────────────────────────
+GAIN FORMULA  (for any link modification — add or delete)
+──────────────────────────────────────────────────────────────────────────────
+
+  When a link modification e is applied to graph G, producing G':
+
+       Gain(e) = σ̄(G') − σ̄(G)
+
+  Expanding:
+
+                  1   k                    1   k
+       Gain(e) = ─── · Σ σ(Cᵢ | G')  −  ─── · Σ σ(Cᵢ | G)
+                  k   i=1                  k   i=1
+
+  In words:
+       → Compute the average safeness of ALL k communities BEFORE the modification
+       → Apply the modification (add or delete the link)
+       → Compute the average safeness of ALL k communities AFTER the modification
+       → Gain = After − Before
+
+
+──────────────────────────────────────────────────────────────────────────────
+NET GAIN FORMULA  (with penalty for inter-target link additions)
+──────────────────────────────────────────────────────────────────────────────
+
+  Case 1 — ADD a link (nₚ → nₜ) where nₜ is a regular external node:
+
+       NetGain(nₚ → nₜ) = Gain(nₚ → nₜ)
+
+                         = σ̄(G + edge(nₚ,nₜ)) − σ̄(G)
+
+
+  Case 2 — ADD a link (nₚ → nₜ) where nₚ ∈ Cᵢ and nₜ ∈ Cⱼ (another target):
+
+                                              λ
+       NetGain(nₚ → nₜ) = Gain(nₚ → nₜ) − ─────
+                                             k − 1
+
+       Where:
+            λ        = penalty weight, set by user (0 to 1)
+            k − 1    = number of other target communities
+            λ/(k−1)  = penalty per inter-target link (constant for a given run)
+
+
+  Case 3 — DELETE a link (nₚ — nₜ) where both nₚ, nₜ ∈ Cᵢ (intra-C delete):
+
+       NetGain(nₚ — nₜ) = Gain(nₚ — nₜ)
+
+                         = σ̄(G − edge(nₚ,nₜ)) − σ̄(G)
+
+       (No penalty for deletions — they only affect internal structure of Cᵢ)
+
+
+──────────────────────────────────────────────────────────────────────────────
+WHY MEAN OVER ALL k COMMUNITIES?
+──────────────────────────────────────────────────────────────────────────────
+
+  When adding edge (nₚ ∈ Cᵢ) → (nₜ ∈ Cⱼ):
+
+     • nₚ gains an external link  →  φ(Cᵢ) increases  →  σ(Cᵢ) increases
+     • nₜ gains an external link  →  φ(Cⱼ) increases  →  σ(Cⱼ) increases
+
+  Using σ̄ (mean over all k) captures BOTH benefits naturally:
+
+                   Δσ(Cᵢ) + Δσ(Cⱼ) + 0 + ... + 0
+       Gain  =   ──────────────────────────────────
+                                  k
+
+  Whereas the old formula only captured Δσ(Cᵢ)/k and missed Δσ(Cⱼ) entirely.
+
+  Despite this broader gain, the penalty is still applied to prevent the
+  two target communities from becoming visibly linked to each other,
+  which could expose both under community detection.
+
+
+──────────────────────────────────────────────────────────────────────────────
+DECISION AT EACH STEP  (greedy selection)
+──────────────────────────────────────────────────────────────────────────────
+
+  At each budget step, the algorithm evaluates all candidates and selects:
+
+       e* = argmax  NetGain(e)
+              e
+
+  Where e ranges over:
+       • All inter-C ADD candidates across all k communities
+       • All non-bridge intra-C DELETE candidates across all k communities
+
+  The selected e* is applied only if  NetGain(e*) > 0.
+  Otherwise the algorithm stops early.
+
+================================================================================
+

@@ -478,7 +478,7 @@ async function runHiding() {
     document.getElementById('btnNextStep').disabled = false;
     document.getElementById('btnRunAll').disabled = false;
 
-    showToast(`Hidden! H-score: ${data.summary.hScoreBefore} → ${data.summary.hScoreAfter} (+${data.summary.hScoreGain})`, 'success');
+    showToast(`Hidden! H-score: ${data.summary.hScoreBefore} → ${data.summary.hScoreAfter} (${data.summary.hScoreGain >= 0 ? '+' : ''}${data.summary.hScoreGain})`, 'success');
 
     // auto-switch to step explorer
     switchTab('steps');
@@ -494,7 +494,7 @@ function populateAnalysis(data) {
   const s = data.summary;
   document.getElementById('hBefore').textContent = s.hScoreBefore;
   document.getElementById('hAfter').textContent = s.hScoreAfter;
-  document.getElementById('hGain').textContent = '+' + s.hScoreGain;
+  document.getElementById('hGain').textContent = (s.hScoreGain >= 0 ? '+' : '') + s.hScoreGain;
   document.getElementById('hPerts').textContent = s.totalPerturbations;
 
   // per-community cards
