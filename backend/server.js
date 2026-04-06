@@ -89,4 +89,4 @@ app.post('/api/hide/mhs', (req, res) => {
 
 app.get('*', (_, res) => res.sendFile(path.join(__dirname,'../frontend/index.html')));
 
-app.listen(PORT, () => console.log(`\n  Community Privacy Lab  →  http://localhost:${PORT}\n`));
+app.listen(PORT, () => console.log(`\n  Social network analysis  →  http://localhost:${PORT}\n`));
