@@ -1,0 +1,7 @@
+{
+  "name": "astro-physics",
+  "num_nodes": 16046,
+  "num_edges": 121251,
+  "num_communities": 0,
+  "has_ground_truth": false
+}

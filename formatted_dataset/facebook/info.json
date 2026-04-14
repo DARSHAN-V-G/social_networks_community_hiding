@@ -1,0 +1,7 @@
+{
+  "name": "facebook",
+  "num_nodes": 4039,
+  "num_edges": 88234,
+  "num_communities": 0,
+  "has_ground_truth": false
+}

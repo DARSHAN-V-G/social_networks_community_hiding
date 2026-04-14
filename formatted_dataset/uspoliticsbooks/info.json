@@ -1,0 +1,7 @@
+{
+  "name": "uspoliticsbooks",
+  "num_nodes": 105,
+  "num_edges": 441,
+  "num_communities": 0,
+  "has_ground_truth": false
+}

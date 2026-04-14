@@ -1,0 +1,1043 @@
+Total pages: 12
+
+--- PAGE 1 ---
+704 IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. 8, NO. 3, JUNE 2021
+Community Hiding by Link Perturbation
+in Social Networks
+Xianyu Chen , Zhongyuan Jiang ,H u iL i ,J i a n f e n gM a , and Philip S. Yu, Fellow, IEEE
+Abstract — Complex social network is a kind of relationship
+system composed of many nodes according to social relations.Community detection helps scholars to understand this networktopology and ﬁnd out meaningful communities. Many scholarsare therefore actively exploring new community detection algo-rithms. However, it brings privacy issues such as the disclosureof personal or group information of community members andgoes against an individual or group desire to be hidden. Hence,how to hide a target community in a network to resist thecommunity detection algorithms becomes critical. Given this,this article studies the community hiding problem, which hasnot been extensively focused so far and aims to properly hidea target community into other communities by perturbing abudget limited number of social links. First, we formalize thecommunity hiding problem and design a gain function. Second,we prove the feasibility of link perturbation operations andpropose an efﬁcient algorithm to solve the community hidingproblem. Finally, we conduct extensive experiments on varietiesof real small- and large-scale social networks and compareour method with other community deception algorithms. Theexperimental results demonstrate that the proposed algorithm ismore efﬁcient than previously proposed algorithms.
+Index Terms — Community deception, community detection,
+community hiding, community security, link perturbation.
+I. I NTRODUCTION
+COMPLEX networks are abstracted from a large number
+of complex systems that exist in reality. The overall func-
+tion of a network is reﬂected in the interaction between each
+pair of nodes in the network. The community structure is itskey structural feature and the c ommunities correspond to the
+functional modules of the system. Extracting these modules of
+the network helps us deeply explore the internal building rules
+of complex networks. Therefore, researchers are more inclined
+to study how to efﬁciently discover the communities’ structureof complex networks and pay a lot of attention to discover
+potential clustering information in social networks at the cost
+of the disclosure of sensitive community information. With the
+Manuscript received September 16, 2020; revised December 28, 2020;
+accepted January 19, 2021. Date of publication February 8, 2021; date of
+current version May 28, 2021. This work was supported in part by the
+Natural Science Basis Research Plan in Shaanxi Province of China underGrant 2020JM-203, in part by the Fundament al Research Funds for the Central
+Universities of China under Grant JB 211501, in part by the National Natural
+Science Foundation of China under G rant 61502375, and in part by the NSF
+under Grant III-1763325, III-1909323, and SaTC-1930941. (Corresponding
+author: Zhongyuan Jiang.)
+Xianyu Chen, Zhongyuan Jiang, Hui Li, and Jianfeng Ma are
+with the School of Cyber Engineering, Xidian University, Xi’an710071, China (e-mail: xychen_3@stu.xidian.edu.cn; zyjiang@xidian.edu.cn;
+hli@xidian.edu.cn; jfma@mail.xidian.edu.cn).
+Philip S. Yu is with the Department of Computer Science, University of
+Illinois at Chicago, Chicago, IL 60607 USA (e-mail: psyu@uic.edu).
+Digital Object Identiﬁer 10.1109/TCSS.2021.3054115rise of awareness of personal privacy protection, we now focus
+on the protection of community privacy in social networks
+rather than exploring the potential community information in
+the networks. In real life, as each of us cannot exist alone
+without other people or other things, the result is that we arein many social networks with speciﬁc meanings, such as the
+patient network, mail network, cooperation network, and social
+network. Take a classic example to illustrate the importanceof community hiding: police o fﬁcers need to collect crime
+evidence in a social network as undercover police ofﬁcers,
+and then, they must meet the following two requirements.
+First, the undercover police ofﬁcers need to conduct normal
+social activities as normal social users, so as not to causecriminals to perceive them an d destroy evidence or escape.
+Second, the communication among the police ofﬁcers is usu-
+ally frequent and it will form a police-community structure insocial networks. However, this kind of community structure is
+not conducive to hiding the identity of the undercover police
+ofﬁcers because of the high vigilance of criminals. Therefore,
+given the nature of the undercover police ofﬁcers, we must
+ﬁnd a way to destroy the commun ity structure and successfully
+hide the police-community stru cture. Thus, it can be seen that
+how to hide one or more target communities in a network to
+evade social network analysis tools is extremely signiﬁcant.This article aims to solve the single target community privacy
+disclosure issue and propose an efﬁcient community hiding
+method.
+What are the ideal goals for the hidden results of a commu-
+nity hiding method? Reference [1] gives three detailed idealgoals to measure community security. Given a social network
+Gand a target community C , good hiding of community C
+inGhas the following three manifestations.
+1)Reachability Preservation: The members of Cshould be
+in the same connected com ponent to reachable from one
+another to keep the information exchange, that is, link
+perturbation updates cannot break the target community
+Cconnectivity.
+2)Community Spread: The members of Care supposed
+to be spread over other communities in Gas much as
+possible.
+3)Community Hiding: The members of Cshould be dis-
+tributed in the largest communities.
+These goals are also the guiding ideology for our work: on
+the basis of not destroying the connected component of the
+target community , in this work, we design a more efﬁcient link
+perturbation mechanism to hide a speciﬁc target community
+into as many as possible other communities of a network.
+2329-924X © 2021 I EEE. Personal u se is perm itted, but republication/redistri bution requires IEEE permission.
+See https://www.ieee.org/publications/rights/index.html for more information.
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+--- PAGE 2 ---
+CHEN et al. : COMMUNITY HIDING BY LINK PERTURBATION IN SOCIAL NETWORKS 705
+This article is dedicated to solve the community hiding
+problem, which has not been extensively focused so far and
+propose a new and efﬁcient algorithm to achieve the three
+goals above. We focus on hiding a target community C into
+other communities by perturb ing a budget limited number of
+social links. To perturb the most suitable links, we formalize
+the community hiding problem and design a gain function toguide perturbation operations. Also, we prove the feasibility
+and operability of the method. Finally, we prove the effective-
+ness of our community hiding algorithm through extensive
+experiments.
+To solve the community hiding problem, our work makes
+the following contributions.
+A. Propose an Approach to Evaluating the Strength of
+Dispersion Within a Community
+An optional and effective way to prevent a node set
+from being detected into a community is to weaken the
+connections between nodes in the set. In this way, howto evaluate the strength of connections between each pair
+of nodes in such a node set? Here, we introduce an eval-
+uation scheme to evaluate the strength of dispersion and
+the closeness of a community. In terms of community
+hiding algorithm, what we need to consider is the degreeof dispersion of a community rather than the closeness of a
+community. Therefore, we introduce a community dispersion
+concept to evaluate the strength of dispersion within a com-munity which is introduced in Sections III and IV .
+B. Devise an Instantiation of the General Gain Function
+To demonstrate the different effects of different link per-
+turbation updates and guide the community hiding algorithm
+to carry out the most appropriate link perturbation operation,we formulate the community hiding problem and devise a new
+instantiation of the gain function. The detailed design of this
+gain function will be described i n the subsequent sections.
+C. Eliminate the Negative Effects of [1] in Two Particular
+Cases
+Fionda and Pirro [1] proposed a community deception algo-
+rithm Dsand it treats link additions and deletions separately.
+Link additions include inter -C(intercommunity) and intra -C
+(intracommunity) link additions, and link deletions include
+inter -Cand intra -Clink deletions. Although the authors
+prove the feasibility of these f our conditions on community
+deception, they cannot avoid the negative effects in case
+intra -Clink additions and case inter -Clink deletions on
+community deception. To solve the problem, we propose amore effective solution. First, we improve the Dsalgorithm
+and form a new gain formula. Second, we prove the hidden
+impact of the above four conditions on community hiding
+and successfully prove the feasibility of operation intra -C
+link additions and inter -Clink deletions. Hence, the most
+important and greatest contribution of this article is that our
+method completely excludes the adverse effects of the above
+two particular cases.D. Extensive Experiments
+To compare our method with previous methods and show
+the effectiveness of our community hiding methods, we con-
+duct a lot of comprehensive experiments in a set of real social
+networks, including both small- and large-scale networks. For
+different social networks with different sizes, we will study indetail the inﬂuence of different community hiding methods on
+the community structure.
+The rest of this article is organized as follows. Section II
+reviews the related research on community detection algo-
+rithms and community deception algorithms on complex social
+networks. Section III shows the preliminaries and problem for-
+mulation. We demonstrate the analysis and community hiding
+algorithm in Section IV. Section V gives the experimentalevaluation. Finally, we summarize this article and describe the
+potential future work in Section VI.
+II. R
+ELATED WORK
+A. Community Detection Algorithms
+Community detection algorithms are mature and a large
+number of community detection algorithms have been pro-posed since the community detection problem brought up. It is
+mainly divided into the following two categories: nonoverlap-
+ping and overlapping community detection. Here, we mainlygive a brief introduction of the above two strategies separately
+in the following.
+First of all, nonoverlapping community structure means
+that each node in network can belong to only one com-
+munity, and there is no intersection between the community
+and the community. The classical algorithms of nonoverlap-
+ping detection methods include modularity optimization algo-
+rithms [2]–[4], afﬁnity propagation algorithms [5], spectrumanalysis algorithms [6], [7], random walk algorithms [8], [9],
+label propagation algorithms [10]–[12], and seed spread
+algorithms [13]–[15]. Among them, the modularity optimiza-tion algorithm is popular, which is ﬁrst presented by Newman
+and Girvan [3], and modularity is a measure of the quality of
+the community division.
+Overlapping community struct ures are closer to real-world
+network topologies. There are also some mature overlappingcommunity detection methods. Palla et al . studied a cluster
+percolation method that is low efﬁciency in spare networks.
+Zhang et al. [17] made a detection survey based on multilabel
+propagation. Besides, the neighborhood-inﬂated seed expan-
+sion algorithm (NISE) is proposed by Whang et al . [18] to
+detect the overlapping comm unities. Furthermore, Ronhovde
+and Nussinov [19] proposed a community detection method
+that is based on the minimization of the Hamiltonian of Pottsmodel and so on.
+B. Community Hiding and Community Antidetection
+Algorithms
+Due to the gradual improvement of people’s awareness
+of privacy protection, some researchers started focusing on
+the community security pr oblems in recent years. Algo-
+rithms include k-structural diversity algorithm [20]; k-degree
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+--- PAGE 3 ---
+706 IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. 8, NO. 3, JUNE 2021
+TABLE I
+COMPARISON WITHRELATED WORK
+anonymity algorithm [21], k-isomorphism algorithm [22], and
+Walk2Privacy algorithm [23]. Besides, Chen et al. [24] pro-
+posed a genetic algorithm (GA) to s earch effective perturbation
+attack schemes for leading privacy protection. In terms of
+community hiding, Nagaraja [25] ﬁrst proposed the idea of
+hiding a community to resist community detection algorithm
+and the studies have shown that perturbing some links caneffectively hide a community. However, Nagaraja only focused
+on link additions toward nodes with high centrality values
+(e.g., degree centrality). Waniek et al. [26] proposed a heuristic
+algorithm by disconnecting internally and connecting exter-
+nally (DICE) for hiding comm unities. Fionda and Pirro [1]
+proposed the concept of comm unity deception to deal with
+community detection problem. S afeness-based deception algo-
+rithm and modularity-based d eception algorithm were mainly
+tested through amounts of experiments.
+Table I shows the comparisons between our approach and
+related studies. Our approach does not adopt the modularitymethod, but we improve Fionda’s algorithm and design a new
+gain function expression to form a new community hiding
+algorithm called Hsthat is based on a new safeness deﬁnition
+(i.e., safeness-based community hiding algorithm). For the new
+safeness deﬁnition, we give out the detailed theoretical proofs
+and formula demonstration in the following sections.
+III. P
+RELIMINARIES AND PROBLEM FORMULATION
+We ﬁrst give preliminary deﬁn itions and related notations.
+Deﬁnition 1: An undirected social network is denoted by
+G=(V,E),w h e r e Vis the node set and Eis the link set. |V|
+and|E|represent the number of nodes and links in network G,
+respectively.
+Deﬁnition 2: A set of communities discovered by a spe-
+ciﬁc community detection algorithm ADis denoted by ¯C=
+{C1,C2,..., Ck},w h e r e Ci⊆V,C1⋃...⋃Ck=Vand
+Ci∩Cj=∅ ,f o ra l l i,j∈{1,..., k}and i=j.G i v e n
+a community ˜C⊆V,a n intra -˜Clink (or intracommunity
+link) has the form (u,v):{u,v}⊆ ˜C, while inter -˜Clink (or
+intercommunity link) has the form (u,v):u∈˜C,v /∈˜C.
+Deﬁnition 3: The degree of the dispersion of a community
+˜Cis denoted by ρ(˜C)=∑
+u∑
+vsp(u,v),w h e r e u,v∈˜C
+and u=v,a n d sp(u,v)represents the length of the shortest
+path between nodes uandv. In our work, there must be a
+shortest path between any two nodes within community ˜C.
+Because the target community we study must satisfy the basic
+condition of reachability preservation , the members of the
+target community belong to the same connected graph. On this
+condition, nodes within a target community can communicate
+to each other via the one or more link paths within community.A. Problem Formulation
+Community detection problem usually refers to detecting
+the closely connected parts of the network and these parts
+are called communities, that is , the connections within the
+communities are dense and the connections between commu-nities are sparse. However, community hiding is the opposite
+of community detection and we must break the above nature
+of the community to resist community detection tools.
+Although community detection is a problem that is easy
+to understand and study, sc holars have done very little in
+terms of technology that allows the target community C to
+be hidden into multiple other communities. The community
+hiding problem can be described as: given a social network G
+and the community divisions ¯Ccorresponding to a community
+detection algorithm A
+D, we randomly select a community
+from ¯Cas the target community C a n di ti sm o r ei nl i n e
+with the practical signiﬁcance of community hiding. The goal
+is to ﬁnd a community hiding algorithm to hide the members
+of community Cinto other communities of the network Gby
+perturbing a fraction of the social links, ﬁnally generating an
+updated network G. After community hiding, algorithm AD
+generates a new community structure on network Gand it is
+within this new community structure that the target community
+hiding is achieved.
+This article proposes a community hiding algorithm that
+is based on link perturbation and designs a gain function to
+guide us to hide the target community into other communities
+by perturbing a budget ( β) limited number of social links.
+Hence, the community hiding problem is equivalent to dealingthe optimization gain function( φ) problem in (1) (Section IV
+gives the speciﬁc deﬁnition of the gain function), where E(C)
+[resp., ˜E(C)] represents the set of intra -C(resp., inter -C)
+links, E
++(resp., E−) represents a set of link additions (resp.,
+deletions), and |E+|+| E−|≤β.E(C)[resp., ˜E(C)]i st h e
+set of intra -C(resp., inter -C) links after link perturbation
+updates. The function φformalizes the community hiding
+problem and the budget βcontrols the number of link updates.
+Hence, our work is just to pick the βchanges that maximize φ
+arg max
+{E(C),˜E(C)}{φ(C,E(C),˜E(C),β, E(C),˜E(C))}
+where
+E(C)∪˜E(C)=(E(C)∪˜E(C)∪E+)\E−
+and
+|E+|+| E−|≤β. (1)
+Fig. 1 shows the schematic of community hiding problem.
+Fig. 1(a) shows the input (a social network G) of community
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+--- PAGE 4 ---
+CHEN et al. : COMMUNITY HIDING BY LINK PERTURBATION IN SOCIAL NETWORKS 707
+Fig. 1. (a) is the input (a social network G) of community hiding module. (b) is the community structure partition of Gunder a community detection
+algorithm and community C2is regarded as the target community. (c) is the step of the co mmunity hiding. The red dotted link represents a link deletion
+operation, and the green link represents a link addition operation. The deleted links are deﬁned as E−and the added links are deﬁned as E+. (d) is the output
+network ( G) of target community hiding deception. (e) means that the community det ection algorithm can’t identify the community structure of the original
+target community members in updated network G.
+TABLE II
+ADOPTED SYMBOLS
+hiding module. Fig. 1(b) shows the community structure
+partition of Gunder a community detection algorithm and
+community C2is regarded as the target community .F i g .1 ( c )
+shows the steps of the community hiding. The red dotted
+link represents a link deletion operation, and the green link
+represents a link addition operation. The delete links aredeﬁned as E
+−and the added links are deﬁned as E+.F i g .1 ( d )
+shows the output network ( G)o f target community hiding
+deception. Fig. 1(e) means that t he community detection algo-
+rithm cannot identify the community structure of the original
+target community members in G. Table II describes all the
+symbols used in this article.
+IV . A NALYSIS AND COMMUNITY HIDING ALGORITHM
+Given a target community C in a social network G,h o w
+can we hide the community in the whole network? We are
+committed to two operations: one is to make Cdispersive by
+deleting the links in Cand one is to increase the connection
+between the members of community Cand the nodes outside
+community C. To illustrate the inﬂuence of the above two
+operations on community hiding, we analyze it from the
+aspects of intra -Cand inter -C, respectively.
+A .C o n c e p to fi n t r a - C
+First, we have to establish a consistent view: the best
+situation is that there are as few intra -Clinks as possible.
+Fig. 2. When a network has 6 nodes and 5 links, (a) is a network structure
+where ρ=70; (b) is a network structure where ρ=64; (c) is a network
+structure where ρ=62; (d) is a network structure where ρ=58; (e) is a
+network structure where ρ=56; (f) is a network structure where ρ=50.
+Thus, we can delete the links within Con the premise of
+not destroying the connected component. We believe that
+disrupting community connectivity will damage informationinteraction between commun ity members and it may cause
+irreparable damage to C. Here, the number of nodes in C
+is denoted by n=|C|and the number of links in Cis
+denoted by mat ﬁrst, so we have m≥n−1. In terms of
+intra -C, we are committed to delete the links in Cto make
+the number of links in Cclose to n−1, where the ideal
+situation is equal to n−1. Its purpose is to make the contact
+within the target community as small as possible to fully
+resist the community detection tools. At this time, it meets
+thereachability preservation goal requirement. In our work,
+the degree of dispersion of a community Cis deﬁned as ρ(C).
+In order to hide the community C,ρ(C)must increase.
+Taking Fig. 2 as an example, a target community C , only
+considering intra -Cnow, has n=6 nodes and only one
+connected component. The number of links in Cis greater
+than or equal to n−1=5. We delete some links in Cand
+assume that it is achievable that the number of links in Ccan
+be reduced to 5, and then, we can obtain one of the situations
+in Fig. 2 (due to the page requirements, only one graph is listedfor each of different ρ).ρof community in Fig. 2(a)–(f) is
+different. ρ(C)of Fig. 2(a) equals 70 that is the maximum,
+whereas Fig. 2(f) equals 50 that is the minimum, that is,
+the degree of dispersion of Fig. 2(a) is the best, while Fig. 2(f)
+is the worst for community hiding. The former is conducive to
+community hiding and the latter is conducive to community
+mining. Hence, the only thing we need to do is to increase
+ρ(C)ofintra -Cby link perturbation updates.
+In this article, we normalize ρ(C)into another indicator
+intra_Community_Safen e s s ,w h i c hi sd e ﬁ n e da s ψ(C)=
+(ρ(C)−ρ(C)min)/(ρ( C)max−ρ(C)min),w h e r e ρ(C)min=
+2(n−1)2[when one node is the center and the rest of the
+nodes are all connected to the center node, such as Fig. 2(f)]andρ(C)
+max=∑n
+k=1(∑n−k
+i=1i+∑k−1
+j=0j)[when all nodes
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+--- PAGE 5 ---
+708 IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. 8, NO. 3, JUNE 2021
+in the community are on a line, such as Fig. 2(a)]. The
+calculation formula of ψ(C)is shown by (2). We assume
+thatρ(C)has its maximum value when all nodes in Care
+located on a line as shown in Fig. 2(a); at this moment,ψ(C)=1. Similarly, ψ(C)=0w h e n ρ(C)=ρ(C)
+min. Here,
+we improve the intra_Community_Safeness of [1], which
+proved the infeasibility of intra -Clink additions and inter -C
+link deletions
+ψ(C)=ρ(C)−2(n−1)2
+∑n
+k=1(∑n−k
+i=1i+∑k−1
+j=0j)
+−2(n−1)2. (2)
+B. Concept of inter-C
+Next, we analyze the connection between one member of
+atarget community C and one external member ( inter -C)
+of other communities. To hide the members of Cinto other
+communities as much as possible, it is necessary to increase
+contact with the outside nodes; namely, we can add links
+between nodes in Cand nodes outside C.I nt h i sw a y ,
+the members of Cwill be dispersed into other communities
+as much as possible and it meets community spread goal
+requirement. Then, how to evaluate the strength of the contact?
+Here, following the deﬁnition of [1], (3) represents thedeﬁnition, where u∈C, and we denote E(u,C)[resp.,
+˜E(u,C)] as the set of intracommunity ( resp., intercommunity)
+links for node u∈C
+ϕ(C)=∑
+u∈C|˜E(u,C)|
+deg(u). (3)
+Equation (3) shows the ratio of u’s links that point outside
+Cto its degree and indicates an account on how uis hidden
+inside the network about its degree. In order to increase ϕ(C),
+ushould diversify its connections, that is, obtaining more
+connections with nodes outside of Cby adding new links.
+Under the premise of the reachability preservation and
+community spread , we can disperse all members of a target
+community into as many as other communities possible. In the
+end, we can achieve the purpose of community hiding .
+C. Community Safeness
+Taking intra -Cand inter -Cinto account from the above
+discussion, we advocate the safeness of community consisting
+of both factors of intra -Cand inter -C. Hence, we give a new
+deﬁnition referred to as community safeness , which is deﬁned
+by the following equation :
+σ(C)=1
+2ψ(C)+1
+2ϕ(C). (4)
+For community hiding problem, Hsdesigns a safeness gain
+(C)=σ(C)−σ(C),w h e r e Cis the community after
+applying one or more link perturbation updates. Therefore,
+the greedy Hsalgorithm selects the most appropriate link
+update that gives the highest (C)at each step.
+Now, we discuss the effect of link updates on community
+safeness and link additions and deletions separately.1) Link Additions: First, we analyze the inter -Clink addi-
+tions. The target community C has community safeness σ(C).
+Let(C)=σ(C)−σ(C)be the safeness gain.
+Theorem 1: For any inter -Clink addition (u,w) s.t.u∈C
+andw/∈Cgiving G=(V,E∪(u,w)) ,w eh a v et h a t :
+1)(C)≥0 always holds and 2) the maximum increase
+in safeness happens for the node u∈arg min {((|˜E(u,C)|)/
+(deg(u)))}.
+Proof: Checking if (C)=σ(C)−σ(C)≥0 amounts
+at checking whether
+(C)=σ(C)−σ(C)
+=1
+2(ψ(C)−ψ(C))+1
+2|˜E(u,C)|+1
+deg(u)+1−1
+2|˜E(u,C)|
+deg(u)
+≥0. (5)
+Sinceψ(C)=ψ(C)only considers inter -Clink additions,
+(C)can be written as
+(C)=1
+2|˜E(u,C)|+1
+deg(u)+1−1
+2|˜E(u,C)|
+deg(u)
+=1
+2deg(u)−|˜E(u,C)|
+deg(u)(deg(u)+1). (6)
+Condition 1) (i.e., (C)≥0) holds since deg (u)≥
+|˜E(u,C)|. Moreover, condition 2) means that the maximum
+increase happens. □
+Theorem 2: Anintra -Clink addition (u,w) s.t.{u,w}⊂ C
+giving an updated network G=(V,E∪{(u,w)})always
+gives(C)<0.
+Proof: There is a truth that ψ(C)≤ψ(C)when adding
+anintra -Clink, so we note that the following condition
+always holds :
+(C)=σ(C)−σ(C)=1
+2(ψ(C)−ψ(C))
++1
+2(|˜E(u,C)|
+deg(u)+1−|˜E(u,C)|
+deg(u))
++1
+2(|˜E(w,C)|
+deg(w)+1−|˜E(w,C)|
+deg(w))
+<0. (7)
+□
+2) Link Deletions: We now pay attention to link deletions
+and give our theories and proofs.
+Theorem 3: Aninter -Clink deletion (u,w):u∈C,w/∈C
+giving G=(V,E\{(u,w)})always gives (C)≤0.
+Proof: To prove (C)=σ(C)−σ(C)≥0 amounts at
+checking whether
+1
+2(ψ(C)−ψ(C))+1
+2|˜E(u,C)|−1
+deg(u)−1−1
+2|˜E(u,C)|
+deg(u)≥0.
+(8)
+Similar to Theorem 1, an inter -Clink deletion has no effect
+on the shortest path between the inner node pairs of C,t h a t
+is,ψ(C)=ψ(C). Therefore, (8) clearly never holds since
+deg(u)≥|˜E(u,C)|. □
+Theorem 4: Anintra -Clink deletion (u,w):{u,w}⊆ C
+always gives (C)>0.
+Proof: First of all, we must set a premise. The nodes
+uandwinCstill belong to the same connected component
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+--- PAGE 6 ---
+CHEN et al. : COMMUNITY HIDING BY LINK PERTURBATION IN SOCIAL NETWORKS 709
+after the deletion of the link (u,w) because we cannot destroy
+the connectivity of the target community . Then, similar to
+Theorem 2, ψ(C)≥ψ(C)when deleting an intra -Clink.
+Therefore, we prove that the following condition always holds :
+(C)=σ(C)−σ(C)=1
+2(ψ(C)−ψ(C))
++1
+2(|˜E(u,C)|
+deg(u)−1−|˜E(u,C)|
+deg(u))
++1
+2(|˜E(w,C)|
+deg(w)−1−|˜E(w,C)|
+deg(w))
+>0. (9)
+□
+Algorithm 1 Hs—Community Hiding via Safeness
+Input: G=(V,E),C,β
+Output: G
+1:do
+2: np=getNodeMinimumAddRatio (C)/*Theorem 1*/
+3: nt=f ind RandomExternalNode (np,C,G)
+4:(C)add←getAdditionGain (np,nt,C)
+5:(nk,nl)=g e tBe stD e lExc lBridg e s (C)/*Theorem 4*/
+6:(C)del←get DeletionGain (nk,nl,C)
+7: if(C)add≥(C)deland(C)add>0then
+8: G←(V,E∪{(np,nt)})
+9: else if (C)del>0then
+10: G←(V,E\{(nk,nl)})
+11:β=β−1,G=G
+12:while β> 0a n d ((C)add>0o r(C)del>0)
+In summary, the community hiding algorithm Hsis outlined
+in Algorithm 1 according to the above analysis [1]. In the
+experiment, our goal is to increase σ(C). The algorithm
+only considers inter -Clink additions in terms of additions
+according to Theorem 1 because it always brings a safeness
+gain. According to Theorem 2, Algorithm 1 does not considertheintra -Clink additions because (C)is always less than
+0. Similarly, for link deletions, under the premise of keep-
+ing the community connected, the algorithm only considers
+intra -Clink deletions according to Theorem 4 and discards
+theinter -Clink deletions according to Theorem 3. Besides,
+this algorithm only requires intra -Cand inter -Clinks.
+The function getNodeMinimumAddRatio (line 2) com-
+putes, for every single node u∈C, the ratio of u’s links
+that point outside Cto its degree and then select the node
+n
+pcorresponding to the minimum fraction. The function
+f ind RandomExternalNode (line 3) randomly ﬁnds a node
+nt(not in community C) such that the link (np,nt)does not
+exist. The function getAdditionGain (line 4) computes the
+link addition gain according to lines 2 and 3. The function
+g e tBe stD e lExc lBridg e s (line 5) consists of two steps: one
+step is that it excludes the social links that could destroy the
+connectivity of Con condition that they are deleted and the
+other step is that it calculates (C)according to Theorem 4 for
+each remaining link. The function get DeletionGain (line
+6) computes the link deletion gai n according to line 5. Finally,
+Hschooses the most suitable link update and conducts the
+update on network (lines 7–11). For each loop operation,we can obtain the best node for link addition and the best
+link for deletion by checking all the nodes and links in C,
+so the time complexity of Algorithm 1 is O(β(n+m)).
+V. E XPERIMENTAL AND EXPERIMENTAL EVA L UAT I O N
+A. Baselines
+To illustrate the effectiveness and feasibility of our
+method, in this article, we introduce two algorithms as base-lines: Ds(Safeness-based community deception) and Dm
+(Modularity-based community d eception) algorithms, and both
+of them are deﬁned in [1].
+Baseline 1 (Ds): Fionda and Pirro [1] proposed the Ds
+algorithm. The difference between Dsand Hsis that Hs
+considers the total shortest path for each pair of nodes in target
+community C , whereas Dsconsiders whether one node in C
+can reach another node in Conly with the help of nodes in C.
+First, Dsintroduces the concept of node safeness σ(u,C).T h e
+node safeness σ(u,C)ofuinGis shown as follows :
+σ(u,C)=1
+2⏐⏐Vu
+C⏐⏐−|E(u,C)|
+|C|−1+1
+2|˜E(u,C)|
+deg(u)(10)
+where Vu
+C⊆Cis the set of nodes reachable from upassing
+only via nodes in C.
+Furthermore, the community safeness σ(C)is deﬁned as
+follows :
+σ(C)=∑
+u∈Cσ(u,C)/|C|. (11)
+For the general deception formulation, Dsproposes a safe-
+ness gain ξC=σ(C)−σ(C)and it chooses the link update
+that gives the highest ξCat each step through the greedy
+algorithm (community safeness). The budget is also deﬁned
+asβ.Dsalgorithm runs in time O(β(n+m)).
+According to (11), Fionda and Pirro [1] proved the effect of
+link updates (link additions and link deletions) on community
+safeness; inter -Clink addition has a positive inﬂuence on
+community hiding, whereas inter -Clink deletion has a nega-
+tive effect on community hiding. However, the authors points
+out that intra -Clink addition and intra -Clink deletion do
+not always introduce a safeness gain. Both of these updates
+have a negative impact on the community hiding under certain
+circumstances. In the experiment, the authors do not considertheintra -Clink addition because they assume that it is a
+decision of C’s members to keep the community disconnected
+ifCis disconnected from the beginning. Besides, Fionda and
+Pirro [1] considered the intra -Clink deletion under certain
+conditions. Obviously, different from [1], our method can
+prove exactly which updates have a positive or negative impact
+on community hiding so that th ere is no need to add artiﬁcial
+assumptions.
+Baseline 2 (Dm): Except the Dsalgorithm, Fionda and
+Pirro [1] also gave the modular ity-based decep tion algorithm
+Dm. It is denoted by deg (v)the degree of v∈V. The degree
+of a community C
+iis denoted by: deg (Ci)=∑
+v∈Cideg(v).
+The modularity of the partition o f a network into community
+¯C={C1,C2,..., Ck}is given by the following equation :
+MG(¯C)=η
+m−δ
+4m2(12)
+where η=∑
+Ci∈¯C|E(Ci)|andδ=∑
+Ci∈¯Cdeg(Ci)2.
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+--- PAGE 7 ---
+710 IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. 8, NO. 3, JUNE 2021
+TABLE III
+USED SOCIAL NETWORKS IN THISWORK
+For community hiding, an intuitive strategy would be to
+leverage the modularity loss ML =MG(¯C)−MG(¯C),w h e r e
+Gis the network after applying link perturbation. The goal
+ofDm is to ﬁnd the set of βlink updates where ML is
+maximized. Dm algorithm runs in time O(|E|+| ¯C|2).
+B. Community Detection Algorithms
+In the ﬁeld of community detection algorithms, in this
+article, we consider ﬁve mature and available detection
+algorithms: Label Propagation algorithm [27], InfoMap algo-
+rithm [28], [29], MultiLevel algorithm [30], SpinGlass algo-
+rithm [31], [32], and Leading Eigenvectors algorithm [33].
+They are all available in the Python version of the igraphlibrary.
+1
+C. Data Sets
+The data sets used in this work are many real social net-
+works, which are free for scientiﬁc use and can be downloadedonline
+2,3,,4and the original authors have already made the
+data sets freely available. It includes both small-scale ( kar,
+dol,f ootb ,a n d polb ) and large-scale ( net,f aceb ,pow,erd,
+and ast) social networks. Table III gives a description of the
+all used social networks for experiments.
+D. Evaluation Metric
+Here, we use the deception score H to describe the quality
+of our algorithm. Fionda and Pirro [1] deﬁned the Hscore in
+detail. For a certain community detection algorithm, we can
+get a community structure ¯C={C1,C2,... Ck}of a certain
+network G.F i r s t ,t h e recall of a detection algorithm ADwith
+respect to a target community C is deﬁned as follows :
+R(Ci,C)=#Csmembers in Cifound by AD
+|C|
+∀Ci∈¯C.(13)
+Then, the precision is deﬁned as follows :
+P(Ci,C)=#Csmembers in Cifound by AD
+|Ci|
+∀Ci∩C=∅ .(14)
+1https://igraph.org/python/doc/igraph.Graph-class.html
+2http://www-personal.umich.edu/ ∼mejn/netdata/
+3http://snap.stanford.edu/data/index.html
+4http://www.orgnet.com/According to (13) and (14), the community deception score
+His deﬁned as
+H(C,¯C)=(
+1−|S(C)−1|
+|C|−1)
+×(
+1
+2(1−max
+Ci∈¯C{R(Ci,C)})
++1
+2(
+1−∑
+Ci⋂C=∅P(Ci,C)
+|Ci∩C=∅ |))
+(15)
+where |S(C)|is the number of connected components in the
+subgraph induced by Csmembers. Hranges from 0 to 1.
+H=1 represents that the nodes in Care in a single connected
+component and are hidden in the network in the best way.
+H=0 represents that each node in Ccomes from different
+components or C∈¯C.
+E. Evaluation Algorithm
+According to H, Fionda and Pirro [1] introduced a standard
+benchmark algorithm to tes t deception algorithms and we
+follow this evaluation algorithm. Similar to [1], we applya budget of changes βsuch that |E
++|+| E−|≤βto the
+network G, and then, we obtain an update network Gafter
+executing the community hiding algorithms ( Hs,Ds,a n d Dm).
+Algorithm 2 Evaluating Community Hiding Algorithm
+1:procedure EV ALUATEHIDINGALGOG( β,AD)
+2: ¯C←AD(G)/*Communities before hiding*/
+3: C←gettargetCommunity (¯C)
+4: MG(¯C)←get Modularity (¯C,C)
+5:σ(C)←getSaf eness (C,G)
+6: H(C,¯C)←getHiding (C,G,¯C)
+7: G←applyHiding (G,C,β,Hs|Ds|Dm)
+8: ¯C←AD(G)/*Communities after hiding*/
+9: MG(¯C)←get Modularity (¯C,G)
+10:σ(C)←getSaf eness (C,G)
+11: H(C,¯C)←getHiding (C,¯C,G)
+Algorithm 2 starts with a community division ¯Cfound by
+given community detection algorithm AD(line 1). In order
+to better show the hidden effect, we select a fully discovered
+community in ¯Cas the target community C (i.e., C∈¯C)
+(line 2). Lines 4–6 compute the original values of modularity,
+safeness, and Hscore. Then, we apply community hiding
+algorithms ( Hs,Ds,a n d Dm), respectively, on target commu-
+nity and obtain the updated network G(line 6). In this way,
+a new community structure ¯Ccan be obtained for network
+Gby algorithm AD(line 7) and compute the values of
+modularity, safeness, and Hscore again to measure the impact
+of the hiding strategies (lines 8 and 9).
+F . Results Analysis
+We run all community hiding methods on the given data sets
+and the experiments are run on a server of 3.50-GHz CPU and
+16.00-GB RAM.
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+--- PAGE 8 ---
+CHEN et al. : COMMUNITY HIDING BY LINK PERTURBATION IN SOCIAL NETWORKS 711
+Fig. 3. Evolution of deception score Has a function of the budget on many small-scale networks.
+Fig. 3 shows a detailed view of the deception score when
+considering Hs,Ds,a n d Dm, and budget βdepends on the
+size of the selected target community C .I f n=|C|,t h e n β
+are 1,2,3,..., when n<10 and βare 2,4,6,..., nwhen
+n≥10.
+First, Fig. 3 contains a total of 20 (ﬁve rows and four
+columns) detailed result comparison subﬁgures for small-scalesocial networks, and each subﬁgure in Fig. 3 shows the
+evolution of Hscores under the three community hiding
+algorithms (i.e., Hs,Ds,a n d Dm) with different budgets.
+As shown, the results of subﬁgures in each row from top to
+bottom represents the impact of the ﬁve community detection
+algorithms ( LPA,IMP,MLE ,SGL,a n d LEI)o nt h e Hscore
+of the three community hiding algorithms, and each column
+from left to right presents results for different social networks.On the whole, the Hsand Dsalgorithms perform better
+than Dm algorithm, and the Hsalgorithm outperforms Ds
+algorithm.
+In detail, for small-scale social networks, Hsand Dsare
+better than Dm. In Fig. 3, we note that the Hscore polyline
+ofDm algorithm below the Hscore polyline of Hsand Ds
+algorithms in over 90% of cases. Also, we observe a badsituation that
+Dm algorithm may be useless for community
+hiding ( H=0) once in a while. The reason for such
+phenomenon is mainly due to these detection algorithms that
+are not based on modularity optimization algorithm, which
+generates that an updated network does not bring enough effect
+on the function because of the low modularity. For Hsand Ds
+algorithms, we can observe that the Hsalgorithm performs
+better than the Dsalgorithm in most cases although there is
+a special counterexample [as shown in Fig. 3(a3)] that Dsis
+a bit better than Hsin case “ f ootb +LPA.” We can also
+see that in some cases, the Hscore of Hsand Dsis very
+near, such as these cases: “ f ootb +IMP,” “polb+IMP,”
+“f ootb +MLE ,” and “ f ootb +SGL ”’ in Fig. (b3), (b4),
+(c3), and (d3), respectively. The rest of the results show that
+Hsis signiﬁcantly better than Ds.
+Similarly, Fig. 4 clearly describes the community deception
+score H ofHs,Ds,a n d Dm algorithms for large-scale social
+networks ( net,f aceb ,pow,erd,a n d ast) under ﬁve commu-
+nity detection algorithms ( LPA,IMP,MLE ,SGL,a n d LEI)( t o
+be consistent with [1], MLE is not applied on data sets pow,
+erd,a n d ast,a n d SGL is not applied on net and f aceb ).
+Intuitively, in terms of community hiding algorithms for
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+--- PAGE 9 ---
+712 IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. 8, NO. 3, JUNE 2021
+Fig. 4. Evolution of deception score Has a function of the budget on many large-scale networks.
+Fig. 5. Running time (in seconds) of Hs,Ds,a n d Dmon small-scale social
+networks.
+large-scale social networks, Hsperforms better than Dsalgo-
+rithm, and Dsperforms better than Dm algorithm. First, for
+f aceb and powsocial networks, Hsalgorithm is signiﬁcantly
+better than Dsalgorithm except for a few special conditions,
+such as “ f aceb +IMP ” (except when budget =10) and
+“f aceb +LPA” (except when budget =10). Similarly, HsFig. 6. Running time (in minutes) of Hs,Ds,a n d Dm on large-scale social
+networks by using log scale.
+is also signiﬁcantly better than Dsand Dm for cases “ erd+
+LEI”a n d“ erd+SGL ” in Fig. 4(d1) and (d4). Because the
+community hiding method relies on the original communitydivisions and the network structure, our Hs shows a bit
+performance reduction compared to the Dsand Dmalgorithms
+such as case “ erd+IMP ” in Fig. 4(d2).
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+--- PAGE 10 ---
+CHEN et al. : COMMUNITY HIDING BY LINK PERTURBATION IN SOCIAL NETWORKS 713
+Fig. 7. Example to illustrate the difference among the three algorithms ( Hs,Ds,a n d Dm). Graph (a) shows the original community partition result of the
+netnetwork. (b), (c), and (d) Effect of the three community hiding algorithms on the target community C .
+On the whole, our Hsmethod outperforms the two baselines
+in the above extensive experiments.
+G. Running Time Evaluation
+In this section, we evaluate the average running time of the
+three community hiding algorithms ( Hs,Ds,a n d Dm)o nt h e
+four small-scale social networks ( kar,dol,f ootb ,a n d polb )
+and the ﬁve large-scale social networks ( net,f aceb ,pow,
+erd,a n d ast), and the runtime includes the time spent to
+load the social networks in memory and the time executing
+the community hidden operation. Figs. 5 and 6 show the
+comparison of the running time of the three community hidingalgorithms on small-scale networks and large-scale networks,
+respectively.
+Fig. 5 shows a detailed result of the running time, and
+we can ﬁnd that all the experiments can be ﬁnished within
+one second. In general, the Hsand Dsalgorithms require
+almost the same running time, whereas Dm algorithm is
+slightly better than Hsand Ds. However, since the Hscore
+of the Dmalgorithm is generally too low, the performance of
+Dm is greatly reduced. With compre hensive performance and
+acceptable algorithm running time, Hsand Dsalgorithms are
+better than Dm algorithm.As shown in Fig. 6 (Fig. 6 uses a log scale on y-axis),
+the running time required for community hiding algorithmsincreases with the network size. When the network size is
+between 1000 and 10 000, the efﬁciency of the three com-
+munity hiding algorithms is co mparable. As a special case,
+the running time for network ast is much longer than the
+other four networks because its number of nodes and links isdozens of times of the other four networks.
+H. Case Study
+In this section, we give an example to illustrate the differ-
+ence between the three commun ity hiding/deception methods.
+Taking netnetwork for an example, we select a target com-
+munity C ∈¯Ccorresponding to LPA detection algorithm, and
+the budget is 4. Fig. 7 intuitively shows the hiding effect ofthree community hiding algorithms on the target community
+in social networks and the members are marked in circles.
+Fig. 7(a) shows the original division of the net social
+network. There are 451 communities in the original graph. The
+nodes with the same color come from the same communityand the node set indicated by the red color is the target
+community C . Fig. 7(b)–(d) represents the community division
+results of the community hiding algorithm Hs,Ds,a n d Dm,
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+--- PAGE 11 ---
+714 IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. 8, NO. 3, JUNE 2021
+respectively. Fig. 7 shows that the Hsalgorithm distributes
+the members of the target community to other communities as
+much as possible and it meets the goal of community spread
+under the condition of reachability preservation . The effect of
+Dsalgorithm is worse than that of Hsalgorithm, and the target
+community members are only dispersed into two communities
+after community hiding. For Dm algorithm, the target com-
+munity members are dispersed into three communities after
+community hiding. According to Fig. 7(d), Dm has no link
+perturbation operation within a community when hiding its
+members and this is also one of its disadvantages. Besides,
+as for community spread ,Hsis better than Dm because most
+of the members of the target community are still in the
+same community in Fig. 7(d). In summary, compared with
+Dsand Dm algorithms, our Hsalgorithm can hide the target
+community better.
+VI. C ONCLUSION
+In this article, we have studied the community security
+problem and proposed a new improved algorithm (i.e., Hs)
+to hide the members of a sensitive target community into
+other nonsensitive communities of a social network. First,we converted the community hiding problem into an opti-
+mization problem by designing a concrete instantiation of
+gain function. Besides, to evaluate the community hiding
+algorithm, we followed the Hscore evaluation method that is
+proposed in [1]. Finally, we conducted extensive comparativeexperiments on a set of small- and large-scale social networks
+to demonstrate the effectiveness of our method. The results
+showed that our Hsmethod can achieve the highest Hscore
+when compared with two baselines ( Dsand Dm) in most of the
+social community divisions. For running time, although Hsand
+Dshad similar running time consumptions on the small-scale
+networks, the Hsachieved higher efﬁciency than Dson the
+large-scale social networks.
+Our research only focuses on single target community
+deception problem, but privacy p rotection of social network
+structure contains three research ideas: 1) single target commu-
+nitydeception problem; 2) multiple target communities decep-
+tion problem; and 3) complete network structure deception
+problem. The ﬁrst problem is the basis for studying other
+problems and the research of this article is the foundation
+of the privacy protection of social network structure. Ideas2) and 3) are very challenging; it requires more energy and
+more comprehensive research in future.
+Although target community deception can help users hide
+their community privacy, it will cause a bad effect if it is
+employed by the attackers or criminals. Therefore, we put
+forward the concept of community inference, which is differ-
+ent from community detection. Community inference needs
+to supplement missing information and identify false linksby using node attributes information. For example, in a user
+relationship network, user interests, user location, and user
+occupation can be considered as the attributes because the
+members of a certain community must have very similar
+characteristics in some respect s. The differences in these
+characteristics can help us to identify the false members in
+a community and to resist the hidden attacker community.Thus, community inference is a valuable research problem
+in future.
+In summary, community hiding is of great signiﬁcance in
+social security issues, and more related research will emergeout in many aspects: 1) designing new and more efﬁcient solu-
+tions for the community hiding problem; 2) studying multiple
+target community deception problem; 3) inspiring novel and
+antihiding community detections to discover the hidden target
+community by using node attributes; and 4) real applications
+into the complex social system to protect individual and
+community privacy.
+R
+EFERENCES
+[1] V . Fionda and G. Pirro, “Community deception or: How to stop fearing
+community detection algorithms,” IEEE Trans. Knowl. Data Eng. ,
+vol. 30, no. 4, pp. 660–673, Apr. 2018.
+[2] M. E. J. Newman and M. Girvan, “Finding and evaluating community
+structure in networks,” Phys. Rev. E, Stat. Phys. Plasmas Fluids Relat.
+Interdiscip. Top. , vol. 69, no. 2, Feb. 2004, Art. no. 026113
+[3] J. Su and T. C. Havens, “Quadratic program-based modularity maximiza-
+tion for fuzzy community detection in social networks,” IEEE Trans.
+Fuzzy Syst. , vol. 23, no. 5, pp. 1356–1371, Oct. 2015.
+[4] V . D. Blondel, J.-L. Guillaume, R. Lambiotte, and E. Lefebvre, “Fast
+unfolding of communities in large networks,” J. Stat. Mechanics: Theory
+Exp. , vol. 2008, no. 10, Oct. 2008, Art. no. P10008, doi: 10.1088/1742-
+5468/2008/10/P10008.
+[5] B. J. Frey and D. Dueck, “Clusteri ng by passing messages between data
+points,” Science , vol. 315, no. 5814, pp. 972–976, Feb. 2007.
+[6] X. Ruan, Y . Sun, B. Wang, and S. Zhang, “The community detection
+of complex networks based on Markov matrix spectrum optimiza-
+tion,” in Proc. Int. Conf. Control Eng. Commun. Technol. , Dec. 2012,
+pp. 608–611.
+[7] M. Marija and T. Bosiljka, “Spectral and dynamical properties in classes
+of sparse networks with mesoscopic inhomogeneities,” P h y s .R e v .E ,
+Stat. Phys. Plasmas Fluids Relat. Interdiscip. Top. , vol. 80, no. 2, 2009,
+Art. no. 026123.
+[8] M. Rosvall and C. T. Bergstrom, “Maps of random walks on complex
+networks reveal community structure,” Proc. Nat. Acad. Sci. USA ,
+vol. 105, no. 4, pp. 1118–1123, Jan. 2008.
+[9] J. K. Ochab and Z. Burda, “Maximal entropy random walk in community
+detection,” Eur. Phys. J. Special Topics , vol. 216, no. 1, pp. 73–81,
+Jan. 2013.
+[10] X. J. Zhu and Z. B. Ghahramani, “Learning from labeled and unlabeled
+data with label propagation,” Carnegie Mellon Univ., Pittsburgh, PA,
+USA, Tech. Rep. CMU-CALD-02-107, 2002.
+[11] S. Liu, F. Zhu, H. Liu, and Z. Du, “A core leader based label propagation
+algorithm for community detection,” China Commun. , vol. 13, no. 12,
+pp. 97–106, Dec. 2016.
+[12] X.-K. Zhang, X. Tian, Y .-N. Li, and C. Song, “Label propagation
+algorithm based on edge clustering co efﬁcient for community detection
+in complex networks,” Int. J. Modern Phys. B , vol. 28, no. 30, Dec. 2014,
+Art. no. 1450216.
+[13] A. Lancichinetti, S. Fortunato, and J. Kertész, “Detecting the overlapping
+and hierarchical community structure in complex networks,” New J.
+Phys. , vol. 11, no. 3, Mar. 2009, Art. no. 033015.
+[14] J. J. Whang, D. F. Gleich, and I. S. Dhillon, “Overlapping community
+detection using seed set expansion,” in Proc. 22nd ACM Int. Conf.
+Conf. Inf. Knowl. Manage. CIKM , 2013, pp. 2099–2108, doi: 10.1145/
+2505515.2505535.
+[15] Z. Jiang et al. , “Trajectory-based community detection,” IEEE Trans.
+Circuits Syst. II, Exp. Briefs , vol. 67, no. 6, pp. 1139–1143, Jun. 2020,
+doi: 10.1109/TCSII.2019.2933337.
+[16] G. Palla, I. Derényi, I. Farkas, and T. Vicsek, “Uncovering the overlap-
+ping community structure of complex networks in nature and society,”
+Nature , vol. 435, no. 7043, pp. 814–818, Jun. 2005.
+[17] Z. Zhang, Y . Gong, K. Wang, and J. Gu, “A survey of over-
+lapping community detection based on multi-label propagation,” inProc. 12th IEEE Conf. Ind. Electron. Appl. (ICIEA) , Jun. 2017,
+pp. 995–999.
+[18] J. J. Whang, D. F. Gleich, and I. S. Dhillon, “Overlapping community
+detection using neighborhood- inﬂated seed expansion,” IEEE Trans.
+Knowl. Data Eng. , vol. 28, no. 5, pp. 1272–1284, May 2016.
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+--- PAGE 12 ---
+CHEN et al. : COMMUNITY HIDING BY LINK PERTURBATION IN SOCIAL NETWORKS 715
+[19] P. Ronhovde and Z. Nussinov, “Mu ltiresolution community detection
+for megascale networks by information-based replica correlations,” Phys.
+Rev. E, Stat. Phys. Plasmas Fluids Relat. Interdiscip. Top. , vol. 80, no. 1,
+Jul. 2009, Art. no. 016109
+[20] C.-H. Tai, P. S. Yu, D.-N. Yang, and M.-S. Chen, “Structural diversity for
+resisting community identiﬁcation in published social networks,” IEEE
+Trans. Knowl. Data Eng. , vol. 26, no. 1, pp. 235–252, Jan. 2014.
+[21] A. Campan, Y . Alufaisan, T. M. Truta, and T. Richardson, “Preserving
+communities in anonymized social networks,” Trans. Data Privacy ,
+vol. 8, no. 1, pp. 55–87, 2015
+[22] J. Cheng, A. W. C. Fu, and J. Liu, “K-isomorphism: Privacy preserving
+network publication against structural attacks,” Proc. ACM SIGMOD Int.
+Conf. Manage. Data , 2010, pp. 459–470.
+[23] Z. Jiang, J. Ma, and P. S. Yu, “Walk2Privacy: Limiting target link privacy
+disclosure against the adversarial link prediction,” in Proc. IEEE Int.
+Conf. Big Data (Big Data) , Dec. 2019, pp. 1381–1388.
+[24] J. Chen et al. , “GA-based Q-attack on community detection,” IEEE
+Trans. Comput. Social Syst. , vol. 6, no. 3, pp. 491–503, Jun. 2019, doi:
+10.1109/TCSS.2019.2912801.
+[25] S. N. Nagaraja, “The impact of unlinkability on adversarial community
+detection: Effects and countermeasures,” in Proc. Int. Symp. Privacy
+Enhancing Technol. Symp. , 2010, pp. 253–272.
+[26] M. Waniek, T. Michalak, T. Ra hwan, and M. Wooldridge, “Hiding
+individuals and communities in a social network,” Nature Hum. Behav. ,
+vol. 2, no. 2, pp. 139–174, 2016.
+[27] U. N. Raghavan, R. Albert, and S. Kumara, “Near linear time algorithm
+to detect community structures in large-scale networks,” Phys. Rev.
+E, Stat. Phys. Plasmas Fluids Relat. Interdiscip. Top. , vol. 76, no. 3,
+Sep. 2007, Art. no. 036106.
+[28] M. Rosvall and C. T. Bergstrom, “Maps of information ﬂow reveal
+community structure in complex networks,” Proc. Nat. Acad. Sci. USA ,
+vol. 105, no. 4, pp. 1118–1123, 2008, doi: 10.1073/pnas.0706851105.
+[29] M. Rosvall, D. Axelsson, and C. T. Bergstrom, “The map equation,”
+Eur. Phys. J. Special Topics , vol. 178, no. 13, pp. 13–23, 2009.
+[30] V . D. Blondel, J. L. Guillaume, R. Lambiotte, and E. Lefebvre, “Fast
+unfolding of community hierarchies in large networks,” J. Stat. Mech.
+Theory Exp. Art. no. P10008, doi: 10.1088/1742-5468/2008/10/P10008.
+[31] J. Reichardt and S. Bornholdt, “ Statistical mechanics of community
+detection,” Phys. Rev. E, Stat. Phys. Plasmas Fluids Relat. Interdiscip.
+Top., vol. 74, no. 1, 2006, Art. no. 016110.
+[32] V . A. Traag and J. Bruggeman, “Community detection in networks with
+positive and negative links,” P h y s .R e v .E ,S t a t .P h y s .P l a s m a sF l u i d s
+Relat. Interdiscip. Top. , vol. 80, no. 3, Sep. 2009, Art. no. 036115.
+[33] M. E. J. Newman, “Finding community structure in networks using the
+eigenvectors of matrices,” Phys. Rev. E, Stat. Phys. Plasmas Fluids Relat.
+Interdiscip. Top. , vol. 74, no. 3, Sep. 2006, Art. no. 036104.
+[34] W. W. Zachary, “An information ﬂow model for conﬂict and ﬁssion
+in small groups,” J. Anthropolog. Res. , vol. 33, no. 4, pp. 452–473,
+Dec. 1977.
+[35] M. Girvan and M. E. J. Newman, “Community structure in social
+and biological networks,” Proc. Nat. Acad. Sci. USA , vol. 99, no. 12,
+pp. 7821–7826, Apr. 2002.
+[36] D. Lusseau, K. Schneider, O. J. Boisseau, P. Haase, E. Slooten, and
+S. M. Dawson, “The bottlenose dolphin community of doubtful sound
+features a large proportion of long-lasting associations,” Behav. Ecology
+Sociobiol. , vol. 54, no. 4, pp. 396–405, Sep. 2003.
+[37] D. J. Watts and S. H. Strogatz, “Collective dynamics of small world
+networks,” Nature , vol. 393, no. 6684, pp. 440–442, 1998.
+[38] M. E. J. Newman, “The structure of scientiﬁc collaboration networks,”
+Proc. Nat. Acad. Sci. USA , vol. 98, pp. 404–409, Jan. 2001.
+Xianyu Chen received the B.S. degree from Anhui
+University, Hefei, China, in 2018. He is currentlypursuing the M.S. degree with the School of CyberEngineering, Xidian University, Xi’an, China.
+His current research interests include social net-
+work analysis and privacy protection.
+Zhongyuan Jiang received both B.S. and Ph.D.
+degrees from Beijing Jiaotong University, Beijing,China, in 2009 and 2013, respectively.
+Currently, he is an Associate Professor with the
+School of Cyber Engineering, Xidian University,Xi’an, China. His research interests include privacypreserving, social computing, urban computing, and
+network functions virtualization.
+Hui Li received the B.S. degree from the Harbin
+Institute of Technology, Harbin, China, in 2005,and the Ph.D. degree from Nanyang Technological
+University, Singapore, in 2012.
+He is a Professor with the School of Cyber
+Engineering, Xidian University, Xi’an, China, and amember of The State Key Laboratory of Integrated
+Services Network. His research interests include
+social computing, knowledge discovery, graph min-ing, and data privacy in big data.
+Jianfeng Ma received the B.S. and Ph.D. degrees
+from Shaanxi Normal University, Xi’an, China, andXidian University, Xi’an, China, in 1985 and 1995,
+respectively.
+He is currently a Professor with the School
+of Cyber Engineering, Xidian University, and the
+Director of the Key Laboratory of Network and Sys-
+tem Security of Shaanxi Province. His research inter-ests include cryptography, wireless network security,data security, and mobile intelligent system security.
+Philip S. Yu (Fellow, IEEE) r eceived the Ph.D.
+degree from Stanford University, Stanford, CA,
+USA.
+He is a Distinguished Professor and the Wexler
+Chair in Information Tec hnology with the Depart-
+ment of Computer Science, University of Illinois
+at Chicago (UIC), Chicago, IL, USA. Before join-
+ing UIC, he was at the IBM Watson ResearchCenter, Ossining, NY , USA, where he built a
+world-renowned data mining and database depart-
+ment. His research interests include data mining,
+social computing, and privacy protection.
+Authorized licensed use limited to: PSG COLLEGE OF TECHNOLOGY. Downloaded on January 29,2026 at 17:14:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+

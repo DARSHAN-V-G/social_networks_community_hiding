@@ -1,0 +1,7 @@
+{
+  "name": "karate",
+  "num_nodes": 34,
+  "num_edges": 78,
+  "num_communities": 2,
+  "has_ground_truth": true
+}

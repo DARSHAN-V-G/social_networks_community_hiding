@@ -1,0 +1,7 @@
+{
+  "name": "football",
+  "num_nodes": 115,
+  "num_edges": 613,
+  "num_communities": 12,
+  "has_ground_truth": true
+}

@@ -1,0 +1,7 @@
+{
+  "name": "erdos",
+  "num_nodes": 5094,
+  "num_edges": 7515,
+  "num_communities": 0,
+  "has_ground_truth": false
+}

@@ -1,103 +1,262 @@
-# Social and Economic Network analysis
+# Community Hiding via Link Perturbation
 
-This project implements two community-hiding algorithms based on link perturbation. Both algorithms iteratively add or remove edges to reduce how easily target communities can be detected.
+Implementation of the **Hs algorithm** and its extensions, based on the paper:
 
-## Single-community hiding (Hs)
+> **"Community Hiding by Link Perturbation in Social Networks"**
+> Xianyu Chen, Zhongyuan Jiang, Hui Li, Jianfeng Ma, Philip S. Yu
+> *IEEE Transactions on Computational Social Systems, Vol. 8, No. 3, June 2021*
 
-**Goal:** hide one target community by improving its safeness score $\sigma$ with a limited perturbation budget $\beta$.
+---
 
-**Key formulas (as implemented):**
-- Candidate evaluation uses the change in safeness:
-  $$\Delta\sigma = \sigma(A') - \sigma(A)$$
-  where $A'$ is the adjacency after a single edge add/remove.
-  Plain text: Delta sigma = sigma(A') - sigma(A)
-- For **ADD** candidates, the estimated gain uses target node degree $d$ and its external neighbors $\text{inter}$:
-  $$\Delta\sigma_{\text{ADD}} \approx \frac{1}{2}\cdot\frac{d-\text{inter}}{d(d+1)}$$
-  Plain text: Delta sigma_ADD ~= 0.5 * (d - inter) / (d * (d + 1))
+## Project Structure
 
-**Algorithm (Hs, matching code):**
-1. Build adjacency and compute initial $\sigma(C)$.
-2. For each budget step $b = 1..\beta$:
-   - **Generate ADD candidates:**
-     - Pick a target node $u \in C$ minimizing $r(u)=\frac{\text{inter}(u)}{\deg(u)}$.
-     - For up to 20 external nodes $v \notin C$ not connected to $u$, add candidate edges $(u,v)$ with the estimated gain above.
-   - **Generate DEL candidates:**
-     - For each intra-community edge $(u,v)$, skip if it is a bridge.
-     - Otherwise compute exact $\Delta\sigma$ after removing $(u,v)$.
-   - Choose the highest positive-gain candidate; stop early if none improves $\sigma$.
-3. Run community detection again on the perturbed graph.
+```
+social_networks_java/
+│
+├── formatted_dataset/          ← All 9 datasets in uniform format
+│   ├── karate/
+│   │   ├── edges.txt           ← "u v" per line (0-indexed)
+│   │   ├── communities.txt     ← "node_id community_id" per line
+│   │   └── info.json           ← metadata (num_nodes, num_edges, ...)
+│   ├── football/
+│   ├── dolphin/
+│   ├── facebook/
+│   ├── erdos/
+│   ├── astro-physics/
+│   ├── co-authorship/
+│   ├── powergrid/
+│   └── uspoliticsbooks/
+│
+├── utils.py                    ← Shared helpers (load_dataset, build_graph, ...)
+│
+├── hs_algorithm.py             ← PERSON 1: Hs community hiding algorithm
+├── evaluation.py               ← PERSON 2: Evaluation framework (Algorithm 2)
+├── mhs_algorithm.py            ← PERSON 3: MHs multi-target future direction
+│
+├── main.py                     ← Entry point (optional — wire everything together)
+└── formatted_dataset/
+    └── convert_datasets.py     ← Script that generated the formatted datasets
+```
 
-**Example (Hs):**
-- Suppose a target node $u$ has $\deg(u)=6$ and $\text{inter}(u)=2$.
-- The estimated ADD gain is:
-  $$\Delta\sigma_{\text{ADD}} \approx \frac{1}{2}\cdot\frac{6-2}{6\cdot7} = \frac{1}{2}\cdot\frac{4}{42} \approx 0.0476$$
-- If no DEL candidate yields a larger positive gain, the algorithm adds $(u,v)$.
+---
 
-**Inputs:**
-- Graph (nodes, links)
-- Target community members
-- Budget $\beta$
-- Detection algorithm (Louvain or LPA)
+## Datasets Available
 
-**Outputs:**
-- Perturbation steps (added/removed edges)
-- Updated graph
-- Final community detection assignment
-- H-score summary for the target
+| Dataset | Nodes | Edges | Communities | Ground Truth |
+|---------|------:|------:|:-----------:|:------------:|
+| karate | 34 | 78 | 2 | ✅ |
+| football | 115 | 613 | 12 | ✅ |
+| dolphin | 62 | 159 | — | No |
+| uspoliticsbooks | 105 | 441 | — | No |
+| co-authorship | 1,461 | 2,742 | — | No |
+| powergrid | 4,941 | 6,594 | — | No |
+| erdos | 5,094 | 7,515 | — | No |
+| facebook | 4,039 | 88,234 | — | No |
+| astro-physics | 16,046 | 121,251 | — | No |
 
-## Multi-community hiding (MHs-Joint)
+---
 
-**Goal:** hide multiple target communities simultaneously by maximizing their mean safeness while penalizing harmful interactions between targets.
+## Shared Utilities (`utils.py`)
 
-**Key formulas (as implemented):**
-- Mean safeness:
-  $$\bar{\sigma} = \frac{1}{k}\sum_{i=1}^{k} \sigma(C_i)$$
-  Plain text: sigma_bar = (1/k) * sum_{i=1..k} sigma(C_i)
-- For a candidate affecting target $C_i$:
-  $$\text{meanGain} = \frac{\Delta\sigma_i}{k}$$
-  Plain text: meanGain = Delta sigma_i / k
-- Penalty when an ADD connects different targets:
-  $$\text{penalty} = \frac{\lambda}{\max(1,k-1)}$$
-  Plain text: penalty = lambda / max(1, k - 1)
-- Final score used for ranking:
-  $$\Delta\Phi = \text{meanGain} - \text{penalty}$$
-  Plain text: Delta Phi = meanGain - penalty
+All three persons must import from `utils.py`. Do **not** copy-paste these functions.
 
-**Algorithm (MHs-Joint, matching code):**
-1. Build adjacency and compute $\sigma(C_i)$ for each target; compute initial $\bar{\sigma}$.
-2. For each budget step $b = 1..\beta$:
-   - **Generate ADD candidates for each target $C_i$:**
-     - Choose $u \in C_i$ minimizing $r(u)=\frac{\text{inter}(u)}{\deg(u)}$.
-     - For up to 15 external nodes $v \notin C_i$ not connected to $u$, compute $\Delta\Phi$.
-     - If $v$ is in a different target, apply the penalty term.
-   - **Generate DEL candidates for each target $C_i$:**
-     - For each intra-community edge $(u,v)$, skip if it is a bridge.
-     - Otherwise compute $\Delta\sigma_i$ and set $\Delta\Phi=\Delta\sigma_i/k$.
-   - Choose the highest positive $\Delta\Phi$; stop early if none improves the objective.
-3. Run community detection again on the perturbed graph.
+```python
+from utils import load_dataset, get_community_nodes, build_graph
 
-**Example (MHs-Joint):**
-- Let $k=2$, $\lambda=0.5$, and a candidate improves target $C_1$ by $\Delta\sigma_1=0.08$.
-- The mean gain is $0.08/2=0.04$.
-- If the added edge connects to the other target, penalty is $0.5/(2-1)=0.5$.
-- The score is $\Delta\Phi=0.04-0.5=-0.46$, so the candidate is rejected.
+edges, communities, info = load_dataset("karate")
+target_nodes = get_community_nodes(communities, target_comm_id=0)
+adj = build_graph(edges)
+```
 
-**Inputs:**
-- Graph (nodes, links)
-- Multiple target communities
-- Budget $\beta$
-- Penalty $\lambda$
-- Detection algorithm (Louvain or LPA)
+---
 
-**Outputs:**
-- Perturbation steps (added/removed edges)
-- Updated graph
-- Final community detection assignment
-- Per-target and combined H-score summary
+## 👤 Person 1 — `hs_algorithm.py`
 
-## Notes
-- Both algorithms avoid removing bridge edges to keep the target subgraph connected.
-- The backend recomputes community detection after perturbations to report the post-hiding result.
-- Implementation files:
-  - Single: `backend/hsAlgorithm.js`
-  - Multi: `backend/mhsAlgorithm.js`
+### What you implement
+The **Hs greedy community hiding algorithm** — Algorithm 1 from the paper (Section IV).
+
+### Core idea
+Each round, pick the single best link operation (add or delete) that maximally increases **community safeness σ(C)**, until budget β is exhausted.
+
+### Key concepts
+
+| Formula | Description |
+|---------|-------------|
+| `ρ(C)` | Sum of all pairwise shortest paths **within** community C |
+| `ψ(C)` | Normalized intra-safeness = `(ρ(C) - ρ_min) / (ρ_max - ρ_min)` |
+| `ϕ(C)` | Inter-safeness = `Σ_u |outside_links(u)| / deg(u)` |
+| `σ(C)` | Total safeness = `0.5 * ψ(C) + 0.5 * ϕ(C)` |
+| `Φ(C)` | Safeness gain = `σ(C') - σ(C)` after one operation |
+
+### Rules (from paper theorems)
+- ✅ **ADD** inter-C links (outside community) — always beneficial
+- ✅ **DELETE** intra-C links (inside community) — always beneficial, if **not a bridge**
+- ❌ **ADD** intra-C links — always harmful, never do this
+- ❌ **DELETE** inter-C links — always harmful, never do this
+
+### Functions to implement
+
+| Function | Description |
+|----------|-------------|
+| `compute_rho()` | BFS-based sum of pairwise shortest paths inside C |
+| `compute_rho_min(n)` | `2(n-1)²` |
+| `compute_rho_max(n)` | Line graph formula |
+| `compute_psi()` | Normalized intra-safeness |
+| `compute_phi()` | Inter-safeness ratio |
+| `compute_safeness()` | `0.5*ψ + 0.5*ϕ` |
+| `get_node_minimum_add_ratio()` | Node with lowest outside-link ratio |
+| `find_random_external_node()` | Pick valid target node outside C |
+| `get_addition_gain()` | Equation 6 from paper |
+| `is_bridge()` | Check if edge removal disconnects C |
+| `get_best_deletion()` | Best non-bridge intra-C edge to remove |
+| `get_deletion_gain()` | Compute gain for a deletion |
+| `hs_algorithm()` | **Main function** — full Algorithm 1 |
+
+### How to run
+```bash
+python hs_algorithm.py
+```
+
+---
+
+## 👤 Person 2 — `evaluation.py`
+
+### What you implement
+The **evaluation framework** — Algorithm 2 from the paper (Section V-D and V-E).
+This measures how well any hiding algorithm worked using 3 metrics.
+
+### Core idea
+Run a community detection algorithm on the graph **before** and **after** hiding, then compare Modularity, Safeness, and H-score.
+
+### Key metrics
+
+| Metric | Description |
+|--------|-------------|
+| **Modularity** `MG` | How well-clustered the graph is: `η/m - δ/(4m²)` |
+| **Safeness** `σ(C)` | Imported from `hs_algorithm.py` — reuse as is |
+| **H-score** `H` | Primary metric: 0 = detected, 1 = perfectly hidden |
+
+### H-score formula
+```
+H = connectivity_factor × (0.5×(1 - max_recall) + 0.5×(1 - avg_precision))
+
+where:
+  max_recall   = max over all detected communities of |Ci ∩ C| / |C|
+  avg_precision = mean of |Ci ∩ C| / |Ci| for communities overlapping C
+  connectivity = 1 - (|S(C)| - 1) / (|C| - 1)
+  |S(C)| = number of connected components in the C subgraph
+```
+
+### Community detection algorithms (use igraph)
+
+| Code | Algorithm | igraph method |
+|------|-----------|---------------|
+| `LPA` | Label Propagation | `community_label_propagation()` |
+| `IMP` | InfoMap | `community_infomap()` |
+| `MLE` | MultiLevel / Louvain | `community_multilevel()` |
+| `SGL` | SpinGlass | `community_spinglass()` |
+| `LEI` | Leading Eigenvectors | `community_leading_eigenvector()` |
+
+### Install igraph
+```bash
+pip install python-igraph
+```
+
+### Functions to implement
+
+| Function | Description |
+|----------|-------------|
+| `run_community_detection()` | Run igraph detection, return `{node: comm_id}` dict |
+| `compute_modularity()` | `η/m - δ/(4m²)` |
+| `compute_connected_components()` | BFS count of components in C subgraph |
+| `compute_recall()` | `R(Ci, C) = |Ci ∩ C| / |C|` per community |
+| `compute_precision()` | `P(Ci, C) = |Ci ∩ C| / |Ci|` per community |
+| `compute_h_score()` | Full H-score formula |
+| `evaluate_hiding()` | **Main function** — full Algorithm 2 pipeline |
+
+### How to run
+```bash
+python evaluation.py
+```
+
+---
+
+## 👤 Person 3 — `mhs_algorithm.py`
+
+### What you implement
+The **MHs algorithm** — a future direction extension of Hs that hides **multiple target communities simultaneously** (mentioned in paper Section VI).
+
+### Core idea
+Instead of optimizing safeness for one community, optimize the **joint safeness** across all target communities. At each step, pick the single operation that gives the maximum total gain across all communities.
+
+### Key concept: Joint Safeness
+```
+Σ_joint = Σ_i σ(Ci)   for all target communities Ci
+
+Φ_joint(op) = Σ_joint AFTER operation - Σ_joint BEFORE operation
+```
+
+The algorithm picks `op = argmax Φ_joint(op)` at each step.
+
+### Design considerations
+- Budget β is **shared** across all target communities (one operation costs 1 from the total)
+- The bridge check still applies **per community** — don't disconnect any target community
+- An inter-C link addition for community Ca might also affect community Cb if the external node happens to be in Cb — handle this in the joint gain calculation
+- Reuse `compute_safeness()`, `is_bridge()`, and other helpers from `hs_algorithm.py`
+
+### Functions to implement
+
+| Function | Description |
+|----------|-------------|
+| `compute_joint_safeness()` | Sum of σ(Ci) over all target communities |
+| `compute_joint_gain()` | Gain across all communities for one proposed operation |
+| `get_all_candidate_additions()` | All valid inter-C add candidates for every community |
+| `get_all_candidate_deletions()` | All valid intra-C delete candidates (non-bridges) |
+| `mhs_algorithm()` | **Main function** — full multi-target hiding loop |
+
+### How to run
+```bash
+python mhs_algorithm.py
+```
+
+---
+
+## Collaboration Rules
+
+1. **Do NOT edit `utils.py`** unless all three agree — it is shared code.
+2. **Person 2 depends on Person 1**: `evaluation.py` imports `compute_safeness()` and `build_adj()` from `hs_algorithm.py`. Person 1 must finish these functions first.
+3. **Person 3 depends on Person 1**: `mhs_algorithm.py` imports many helpers from `hs_algorithm.py`. Coordinate with Person 1.
+4. Each person only modifies their own file (`hs_algorithm.py`, `evaluation.py`, `mhs_algorithm.py`).
+5. Use `karate` or `football` dataset for local testing (small and fast).
+
+---
+
+## Recommended Order of Work
+
+```
+Person 1 (Hs)         →  Person 2 (Evaluation)  →  Final comparison
+     ↓
+Person 3 (MHs)        →  Use Person 2's evaluator to test MHs
+```
+
+---
+
+## Quick Start
+
+```python
+# Load any dataset
+from utils import load_dataset, get_community_nodes
+
+edges, communities, info = load_dataset("karate")
+target_nodes = get_community_nodes(communities, target_comm_id=0)
+
+# Person 1: Run hiding
+from hs_algorithm import hs_algorithm
+new_edges = hs_algorithm(edges, target_nodes, budget=5)
+
+# Person 2: Evaluate the result
+from evaluation import evaluate_hiding
+results = evaluate_hiding(edges, 0, communities, budget=5,
+                          hiding_fn=hs_algorithm, detection_algorithm='LPA')
+print(results)
+```

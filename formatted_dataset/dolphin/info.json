@@ -1,0 +1,7 @@
+{
+  "name": "dolphin",
+  "num_nodes": 62,
+  "num_edges": 159,
+  "num_communities": 0,
+  "has_ground_truth": false
+}
