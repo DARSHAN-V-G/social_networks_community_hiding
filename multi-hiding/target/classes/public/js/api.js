@@ -18,5 +18,8 @@ async function hideCommunities(dataset, communities, budget) {
         },
         body: JSON.stringify({ dataset, communities, budget }),
     });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
     return await response.json();
 }

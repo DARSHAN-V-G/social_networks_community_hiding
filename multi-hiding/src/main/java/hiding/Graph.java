@@ -59,6 +59,7 @@ public class Graph {
             Map<String, Object> node = new HashMap<>();
             node.put("id", nodeId);
             node.put("label", String.valueOf(nodeId));
+            node.put("font", Map.of("color", "white"));
             nodes.add(node);
         }
 

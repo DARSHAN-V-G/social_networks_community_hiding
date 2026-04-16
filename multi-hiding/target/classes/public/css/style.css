@@ -1,13 +1,205 @@
-#graph-container {
-    width: 800px;
-    height: 600px;
-    border: 1px solid lightgray;
+:root {
+    --primary: #2c3e50;
+    --secondary: #34495e;
+    --accent: #3498db;
+    --success: #2ecc71;
+    --danger: #e74c3c;
+    --bg-color: #f8f9fa;
+    --panel-bg: #ffffff;
+    --text: #2c3e50;
+    --border: #e0e6ed;
+    --radius: 8px;
+    --shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text);
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+h2, h3 {
+    color: var(--secondary);
+    font-weight: 500;
 }
 
 #controls {
-    margin: 10px;
+    background: var(--panel-bg);
+    padding: 15px 25px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
-#community-selection {
-    margin: 10px;
+select, input[type="number"] {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+select:focus, input[type="number"]:focus {
+    border-color: var(--accent);
+}
+
+button {
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+button:hover:not(:disabled) {
+    background-color: #2980b9;
+}
+
+button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+#main-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+#graph-container-before, #graph-container-after {
+    flex: 1;
+    min-width: 450px;
+    background: var(--panel-bg);
+    padding: 20px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.graph {
+    width: 100%;
+    height: 500px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background-color: #fafbfc;
+}
+
+#sidebar {
+    width: 320px;
+    background: var(--panel-bg);
+    padding: 25px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    flex-shrink: 0;
+}
+
+#community-list {
+    margin-bottom: 20px;
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+#community-list label {
+    margin-left: 8px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+#community-list input[type="checkbox"] {
+    cursor: pointer;
+}
+
+hr {
+    border: 0;
+    height: 1px;
+    background: var(--border);
+    margin: 25px 0;
+}
+
+#edge-changes {
+    margin-top: 20px;
+}
+
+#edge-change-list {
+    list-style-type: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: #fafbfc;
+}
+
+#edge-change-list li {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-family: monospace;
+}
+
+#edge-change-list li:last-child {
+    border-bottom: none;
+}
+
+#edge-change-list li.added {
+    color: var(--success);
+    background-color: rgba(46, 204, 113, 0.1);
+}
+
+#edge-change-list li.removed {
+    color: var(--danger);
+    background-color: rgba(231, 76, 60, 0.1);
+}
+
+#safeness-info {
+    border-left: 4px solid var(--accent);
+}
+
+#safeness-details ul {
+    padding-left: 20px;
+    margin: 10px 0 0 0;
+}
+
+#safeness-details li {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+/* Custom Scrollbar for a cleaner look */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8; 
 }

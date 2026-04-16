@@ -17,13 +17,35 @@
         </select>
         <button id="load-graph">Load Graph</button>
     </div>
-    <div id="graph-container"></div>
-    <div id="community-selection">
-        <h2>Select Communities to Hide</h2>
-        <div id="community-list"></div>
-        <label for="budget">Budget:</label>
-        <input type="number" id="budget" name="budget" value="10">
-        <button id="hide-communities">Hide Selected Communities</button>
+
+    <div id="main-container">
+        <div id="graph-container-before">
+            <h2>Before Hiding</h2>
+            <div id="graph-before" class="graph"></div>
+        </div>
+        <div id="graph-container-after">
+            <h2>After Hiding</h2>
+            <div id="graph-after" class="graph"></div>
+        </div>
+        <div id="sidebar">
+            <h2>Communities</h2>
+            <div id="community-list"></div>
+            <label for="budget">Budget:</label>
+            <input type="number" id="budget" name="budget" value="10">
+            <button id="hide-communities">Hide Selected Communities</button>
+            <div id="safeness-info" style="margin-top: 15px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 5px; display: none;">
+                <h3>Safeness Scores</h3>
+                <div id="safeness-details"></div>
+            </div>
+            <hr>
+            <h2>Algorithm Steps</h2>
+            <button id="step-by-step" disabled>Step-by-Step</button>
+            <button id="run-full" disabled>Run Full Algorithm</button>
+            <div id="edge-changes">
+                <h3>Edge Changes</h3>
+                <ul id="edge-change-list"></ul>
+            </div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>

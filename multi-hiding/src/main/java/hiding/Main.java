@@ -57,19 +57,40 @@ public class Main {
 
             String dataset = (String) payload.get("dataset");
             List<List<Integer>> communitiesToHideRaw = (List<List<Integer>>) payload.get("communities");
-            int budget = (int) payload.get("budget");
-            double lambda = 0.5; // Or get from payload if you want it to be configurable
+            int budget = ((Number) payload.get("budget")).intValue();
+            double lambda = 0.5;
 
             List<Set<Integer>> targets = communitiesToHideRaw.stream()
-                    .map(list -> (Set<Integer>) list.stream().collect(Collectors.toSet()))
+                    .map(list -> list.stream().collect(Collectors.toSet()))
                     .collect(Collectors.toList());
 
             try {
                 Graph graph = loadGraphFromDataset(dataset);
-                int removedEdges = MHsJointAlgorithm.run(graph, targets, budget, lambda);
-                ctx.json(Map.of("removed_edges", removedEdges));
+                
+                List<Double> beforeSafeness = new java.util.ArrayList<>();
+                for (Set<Integer> target : targets) {
+                    beforeSafeness.add(SafenessMetrics.computeSafeness(graph, target));
+                }
+
+                List<Map<String, Object>> steps = MHsJointAlgorithm.runWithSteps(graph, targets, budget, lambda);
+                
+                List<Double> afterSafeness = new java.util.ArrayList<>();
+                for (Set<Integer> target : targets) {
+                    afterSafeness.add(SafenessMetrics.computeSafeness(graph, target));
+                }
+
+                CommunityDetection cdAfter = new CommunityDetection(graph);
+                List<Set<Integer>> afterCommunities = cdAfter.detectCommunities();
+
+                Map<String, Object> response = new java.util.HashMap<>();
+                response.put("steps", steps);
+                response.put("beforeSafeness", beforeSafeness);
+                response.put("afterSafeness", afterSafeness);
+                response.put("afterCommunities", afterCommunities);
+
+                ctx.json(response);
             } catch (IOException e) {
-                ctx.status(500).result("Failed to run hiding algorithm: " + e.getMessage());
+                ctx.status(500).result("Failed to get algorithm steps: " + e.getMessage());
             }
         });
     }
