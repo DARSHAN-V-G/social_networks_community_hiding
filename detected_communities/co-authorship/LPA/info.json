@@ -1,0 +1,13 @@
+{
+  "dataset": "co-authorship",
+  "algorithm": "LPA",
+  "algorithm_full": "Label Propagation",
+  "num_nodes": 1461,
+  "num_edges": 2742,
+  "num_communities": 328,
+  "largest_community": 35,
+  "smallest_community": 2,
+  "avg_community_size": 4.45,
+  "runtime_seconds": 0.0014,
+  "output_file": "communities.txt"
+}
