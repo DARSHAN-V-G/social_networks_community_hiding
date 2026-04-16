@@ -1,1 +1,7 @@
-main\java\hiding\MHsAlgorithm.class
+hiding/Graph.class
+hiding/MHsJointAlgorithm.class
+hiding/SafenessMetrics.class
+hiding/GraphLoader.class
+hiding/Main.class
+hiding/CommunityDetection.class
+hiding/MHsJointAlgorithm$Move.class

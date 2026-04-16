@@ -1,0 +1,13 @@
+#graph-container {
+    width: 800px;
+    height: 600px;
+    border: 1px solid lightgray;
+}
+
+#controls {
+    margin: 10px;
+}
+
+#community-selection {
+    margin: 10px;
+}
