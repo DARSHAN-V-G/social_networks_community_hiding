@@ -1,0 +1,492 @@
+{
+  "completed": [
+    {
+      "dataset": "karate",
+      "algorithm": "LPA",
+      "algorithm_full": "Label Propagation",
+      "num_nodes": 34,
+      "num_edges": 78,
+      "num_communities": 2,
+      "largest_community": 19,
+      "smallest_community": 15,
+      "avg_community_size": 17.0,
+      "runtime_seconds": 0.0,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "karate",
+      "algorithm": "IMP",
+      "algorithm_full": "InfoMap",
+      "num_nodes": 34,
+      "num_edges": 78,
+      "num_communities": 3,
+      "largest_community": 17,
+      "smallest_community": 5,
+      "avg_community_size": 11.33,
+      "runtime_seconds": 0.0076,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "karate",
+      "algorithm": "MLE",
+      "algorithm_full": "MultiLevel (Louvain)",
+      "num_nodes": 34,
+      "num_edges": 78,
+      "num_communities": 4,
+      "largest_community": 12,
+      "smallest_community": 5,
+      "avg_community_size": 8.5,
+      "runtime_seconds": 0.001,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "karate",
+      "algorithm": "SGL",
+      "algorithm_full": "SpinGlass",
+      "num_nodes": 34,
+      "num_edges": 78,
+      "num_communities": 4,
+      "largest_community": 12,
+      "smallest_community": 5,
+      "avg_community_size": 8.5,
+      "runtime_seconds": 0.3497,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "karate",
+      "algorithm": "LEI",
+      "algorithm_full": "Leading Eigenvectors",
+      "num_nodes": 34,
+      "num_edges": 78,
+      "num_communities": 4,
+      "largest_community": 12,
+      "smallest_community": 6,
+      "avg_community_size": 8.5,
+      "runtime_seconds": 0.0016,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "dolphin",
+      "algorithm": "LPA",
+      "algorithm_full": "Label Propagation",
+      "num_nodes": 62,
+      "num_edges": 159,
+      "num_communities": 3,
+      "largest_community": 39,
+      "smallest_community": 2,
+      "avg_community_size": 20.67,
+      "runtime_seconds": 0.0,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "dolphin",
+      "algorithm": "IMP",
+      "algorithm_full": "InfoMap",
+      "num_nodes": 62,
+      "num_edges": 159,
+      "num_communities": 5,
+      "largest_community": 20,
+      "smallest_community": 5,
+      "avg_community_size": 12.4,
+      "runtime_seconds": 0.0099,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "dolphin",
+      "algorithm": "MLE",
+      "algorithm_full": "MultiLevel (Louvain)",
+      "num_nodes": 62,
+      "num_edges": 159,
+      "num_communities": 5,
+      "largest_community": 18,
+      "smallest_community": 6,
+      "avg_community_size": 12.4,
+      "runtime_seconds": 0.0,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "dolphin",
+      "algorithm": "SGL",
+      "algorithm_full": "SpinGlass",
+      "num_nodes": 62,
+      "num_edges": 159,
+      "num_communities": 6,
+      "largest_community": 20,
+      "smallest_community": 1,
+      "avg_community_size": 10.33,
+      "runtime_seconds": 0.3837,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "dolphin",
+      "algorithm": "LEI",
+      "algorithm_full": "Leading Eigenvectors",
+      "num_nodes": 62,
+      "num_edges": 159,
+      "num_communities": 5,
+      "largest_community": 17,
+      "smallest_community": 8,
+      "avg_community_size": 12.4,
+      "runtime_seconds": 0.0022,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "football",
+      "algorithm": "LPA",
+      "algorithm_full": "Label Propagation",
+      "num_nodes": 115,
+      "num_edges": 613,
+      "num_communities": 12,
+      "largest_community": 16,
+      "smallest_community": 6,
+      "avg_community_size": 9.58,
+      "runtime_seconds": 0.0003,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "football",
+      "algorithm": "IMP",
+      "algorithm_full": "InfoMap",
+      "num_nodes": 115,
+      "num_edges": 613,
+      "num_communities": 12,
+      "largest_community": 14,
+      "smallest_community": 5,
+      "avg_community_size": 9.58,
+      "runtime_seconds": 0.0255,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "football",
+      "algorithm": "MLE",
+      "algorithm_full": "MultiLevel (Louvain)",
+      "num_nodes": 115,
+      "num_edges": 613,
+      "num_communities": 9,
+      "largest_community": 24,
+      "smallest_community": 9,
+      "avg_community_size": 12.78,
+      "runtime_seconds": 0.0005,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "football",
+      "algorithm": "SGL",
+      "algorithm_full": "SpinGlass",
+      "num_nodes": 115,
+      "num_edges": 613,
+      "num_communities": 11,
+      "largest_community": 16,
+      "smallest_community": 6,
+      "avg_community_size": 10.45,
+      "runtime_seconds": 0.3989,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "football",
+      "algorithm": "LEI",
+      "algorithm_full": "Leading Eigenvectors",
+      "num_nodes": 115,
+      "num_edges": 613,
+      "num_communities": 8,
+      "largest_community": 28,
+      "smallest_community": 8,
+      "avg_community_size": 14.38,
+      "runtime_seconds": 0.0048,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "uspoliticsbooks",
+      "algorithm": "LPA",
+      "algorithm_full": "Label Propagation",
+      "num_nodes": 105,
+      "num_edges": 441,
+      "num_communities": 3,
+      "largest_community": 53,
+      "smallest_community": 7,
+      "avg_community_size": 35.0,
+      "runtime_seconds": 0.0,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "uspoliticsbooks",
+      "algorithm": "IMP",
+      "algorithm_full": "InfoMap",
+      "num_nodes": 105,
+      "num_edges": 441,
+      "num_communities": 5,
+      "largest_community": 42,
+      "smallest_community": 3,
+      "avg_community_size": 21.0,
+      "runtime_seconds": 0.0141,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "uspoliticsbooks",
+      "algorithm": "MLE",
+      "algorithm_full": "MultiLevel (Louvain)",
+      "num_nodes": 105,
+      "num_edges": 441,
+      "num_communities": 5,
+      "largest_community": 42,
+      "smallest_community": 3,
+      "avg_community_size": 21.0,
+      "runtime_seconds": 0.0022,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "uspoliticsbooks",
+      "algorithm": "SGL",
+      "algorithm_full": "SpinGlass",
+      "num_nodes": 105,
+      "num_edges": 441,
+      "num_communities": 5,
+      "largest_community": 40,
+      "smallest_community": 9,
+      "avg_community_size": 21.0,
+      "runtime_seconds": 0.7932,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "uspoliticsbooks",
+      "algorithm": "LEI",
+      "algorithm_full": "Leading Eigenvectors",
+      "num_nodes": 105,
+      "num_edges": 441,
+      "num_communities": 4,
+      "largest_community": 37,
+      "smallest_community": 15,
+      "avg_community_size": 26.25,
+      "runtime_seconds": 0.0023,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "facebook",
+      "algorithm": "LPA",
+      "algorithm_full": "Label Propagation",
+      "num_nodes": 4039,
+      "num_edges": 88234,
+      "num_communities": 51,
+      "largest_community": 481,
+      "smallest_community": 3,
+      "avg_community_size": 79.2,
+      "runtime_seconds": 0.0313,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "facebook",
+      "algorithm": "IMP",
+      "algorithm_full": "InfoMap",
+      "num_nodes": 4039,
+      "num_edges": 88234,
+      "num_communities": 76,
+      "largest_community": 443,
+      "smallest_community": 2,
+      "avg_community_size": 53.14,
+      "runtime_seconds": 1.6172,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "facebook",
+      "algorithm": "MLE",
+      "algorithm_full": "MultiLevel (Louvain)",
+      "num_nodes": 4039,
+      "num_edges": 88234,
+      "num_communities": 16,
+      "largest_community": 548,
+      "smallest_community": 19,
+      "avg_community_size": 252.44,
+      "runtime_seconds": 0.103,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "facebook",
+      "algorithm": "LEI",
+      "algorithm_full": "Leading Eigenvectors",
+      "num_nodes": 4039,
+      "num_edges": 88234,
+      "num_communities": 18,
+      "largest_community": 599,
+      "smallest_community": 1,
+      "avg_community_size": 224.39,
+      "runtime_seconds": 0.6217,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "powergrid",
+      "algorithm": "LPA",
+      "algorithm_full": "Label Propagation",
+      "num_nodes": 4941,
+      "num_edges": 6594,
+      "num_communities": 493,
+      "largest_community": 50,
+      "smallest_community": 3,
+      "avg_community_size": 10.02,
+      "runtime_seconds": 0.036,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "powergrid",
+      "algorithm": "IMP",
+      "algorithm_full": "InfoMap",
+      "num_nodes": 4941,
+      "num_edges": 6594,
+      "num_communities": 423,
+      "largest_community": 51,
+      "smallest_community": 3,
+      "avg_community_size": 11.68,
+      "runtime_seconds": 1.7767,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "powergrid",
+      "algorithm": "LEI",
+      "algorithm_full": "Leading Eigenvectors",
+      "num_nodes": 4941,
+      "num_edges": 6594,
+      "num_communities": 128,
+      "largest_community": 248,
+      "smallest_community": 1,
+      "avg_community_size": 38.6,
+      "runtime_seconds": 4.3472,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "erdos",
+      "algorithm": "LPA",
+      "algorithm_full": "Label Propagation",
+      "num_nodes": 5094,
+      "num_edges": 7515,
+      "num_communities": 359,
+      "largest_community": 98,
+      "smallest_community": 2,
+      "avg_community_size": 14.19,
+      "runtime_seconds": 0.0089,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "erdos",
+      "algorithm": "IMP",
+      "algorithm_full": "InfoMap",
+      "num_nodes": 5094,
+      "num_edges": 7515,
+      "num_communities": 291,
+      "largest_community": 83,
+      "smallest_community": 2,
+      "avg_community_size": 17.51,
+      "runtime_seconds": 0.8132,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "astro-physics",
+      "algorithm": "LPA",
+      "algorithm_full": "Label Propagation",
+      "num_nodes": 16046,
+      "num_edges": 121251,
+      "num_communities": 864,
+      "largest_community": 8561,
+      "smallest_community": 2,
+      "avg_community_size": 18.57,
+      "runtime_seconds": 0.3149,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "astro-physics",
+      "algorithm": "IMP",
+      "algorithm_full": "InfoMap",
+      "num_nodes": 16046,
+      "num_edges": 121251,
+      "num_communities": 1027,
+      "largest_community": 202,
+      "smallest_community": 2,
+      "avg_community_size": 15.62,
+      "runtime_seconds": 7.0048,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "co-authorship",
+      "algorithm": "LPA",
+      "algorithm_full": "Label Propagation",
+      "num_nodes": 1461,
+      "num_edges": 2742,
+      "num_communities": 328,
+      "largest_community": 35,
+      "smallest_community": 2,
+      "avg_community_size": 4.45,
+      "runtime_seconds": 0.0014,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "co-authorship",
+      "algorithm": "IMP",
+      "algorithm_full": "InfoMap",
+      "num_nodes": 1461,
+      "num_edges": 2742,
+      "num_communities": 313,
+      "largest_community": 30,
+      "smallest_community": 2,
+      "avg_community_size": 4.67,
+      "runtime_seconds": 0.318,
+      "output_file": "communities.txt"
+    },
+    {
+      "dataset": "co-authorship",
+      "algorithm": "MLE",
+      "algorithm_full": "MultiLevel (Louvain)",
+      "num_nodes": 1461,
+      "num_edges": 2742,
+      "num_communities": 277,
+      "largest_community": 92,
+      "smallest_community": 2,
+      "avg_community_size": 5.27,
+      "runtime_seconds": 0.0,
+      "output_file": "communities.txt"
+    }
+  ],
+  "failed": [
+    {
+      "dataset": "facebook",
+      "algo": "SGL"
+    },
+    {
+      "dataset": "powergrid",
+      "algo": "MLE"
+    },
+    {
+      "dataset": "powergrid",
+      "algo": "SGL"
+    },
+    {
+      "dataset": "erdos",
+      "algo": "MLE"
+    },
+    {
+      "dataset": "erdos",
+      "algo": "SGL"
+    },
+    {
+      "dataset": "erdos",
+      "algo": "LEI"
+    },
+    {
+      "dataset": "astro-physics",
+      "algo": "MLE"
+    },
+    {
+      "dataset": "astro-physics",
+      "algo": "SGL"
+    },
+    {
+      "dataset": "astro-physics",
+      "algo": "LEI"
+    },
+    {
+      "dataset": "co-authorship",
+      "algo": "SGL"
+    },
+    {
+      "dataset": "co-authorship",
+      "algo": "LEI"
+    }
+  ]
+}

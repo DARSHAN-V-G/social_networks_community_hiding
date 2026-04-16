@@ -1,0 +1,13 @@
+{
+  "dataset": "karate",
+  "algorithm": "SGL",
+  "algorithm_full": "SpinGlass",
+  "num_nodes": 34,
+  "num_edges": 78,
+  "num_communities": 4,
+  "largest_community": 12,
+  "smallest_community": 5,
+  "avg_community_size": 8.5,
+  "runtime_seconds": 0.3497,
+  "output_file": "communities.txt"
+}
