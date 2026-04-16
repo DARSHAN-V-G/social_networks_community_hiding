@@ -59,74 +59,48 @@ REFERENCES:
 import random
 import heapq
 from collections import defaultdict
+from collections import deque
 from utils import load_dataset, build_graph, get_community_nodes
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# CORE METRIC FUNCTIONS
-# ─────────────────────────────────────────────────────────────────────────────
-
-def compute_rho(community_nodes, adj):
-    """
-    Compute ρ(C): sum of all pairwise shortest path lengths within community C.
-    Use BFS restricted to nodes in C.
-
-    Args:
-        community_nodes : set of node IDs in the target community
-        adj             : dict {node: set of neighbors} for the full graph
-
-    Returns:
-        float — ρ(C)
-    """
-    # TODO: Implement BFS-based all-pairs shortest path within the community
-    # Hint: for each node u in community_nodes, run BFS only through
-    #       nodes that are also in community_nodes, and sum up distances.
-    pass
-
+def compute_rho(community, adj):
+    dist = 0
+    for source in community:
+        visited={source : 0}
+        queue=deque([source])
+        while queue :
+            current=queue.popleft()
+            cur_dist=visited[current]
+            for n in adj[current]:
+                if n in community and n not in visited:
+                    visited[n]=cur_dist + 1
+                    queue.append(n)
+        for n,d in visited.items():
+            if n!=source:
+                dist+=d
+    return dist
 
 def compute_rho_min(n):
-    """
-    Compute ρ_min = 2(n-1)²  [star topology — worst for hiding].
-
-    Args:
-        n : int — number of nodes in community
-
-    Returns:
-        float
-    """
-    # TODO
-    pass
-
+    return 2*(n-1)**2   #mentioned in the paper for star topology
 
 def compute_rho_max(n):
-    """
-    Compute ρ_max for a line graph of n nodes.
-    Formula: Σ_{k=1}^{n} (Σ_{i=1}^{n-k} i + Σ_{j=0}^{k-1} j)
-
-    Args:
-        n : int — number of nodes in community
-
-    Returns:
-        float
-    """
-    # TODO
-    pass
+    dist=0
+    for k in range(1,n+1):
+        m=n-k
+        r=m*(m+1)//2
+        l=k*(k-1)//2
+        dist+= r + l
+    return dist
 
 
-def compute_psi(community_nodes, adj):
-    """
-    Compute ψ(C) = (ρ(C) - ρ_min) / (ρ_max - ρ_min)
-    Normalized intra-community safeness. Range: [0, 1].
-
-    Args:
-        community_nodes : set of node IDs in the target community
-        adj             : dict {node: set of neighbors}
-
-    Returns:
-        float — ψ(C), clamped to [0, 1]
-    """
-    # TODO
-    pass
+def compute_psi(community, adj):
+    l = len(community)
+    if l<=1 : return 0.0
+    rho=compute_rho(community, adj)
+    rho_min=compute_rho_min(l)
+    rho_max=compute_rho_max(l)
+    if rho_max-rho_min==0:
+        return 0.0
+    return (rho-rho_min) / (rho_max-rho_min)
 
 
 def compute_phi(community_nodes, adj):
